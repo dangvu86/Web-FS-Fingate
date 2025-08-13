@@ -1,0 +1,6 @@
+Flask
+pandas
+beautifulsoup4
+gdown
+xlsxwriter
+lxml
