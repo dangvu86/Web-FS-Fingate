@@ -14,15 +14,68 @@ st.title("FS Fingate")
 # Hàm tải file ZIP từ Google Drive
 
 def download_zip_from_drive(file_id):
+    """Download ZIP file from Google Drive with multiple fallback methods"""
+    
+    # Method 1: Try gdown with direct download
     try:
-        url = f"https://drive.google.com/uc?id={file_id}"
+        url = f"https://drive.google.com/uc?id={file_id}&export=download"
         with tempfile.NamedTemporaryFile(delete=False, suffix=".zip") as tmp_file:
+            st.info(f"Đang tải file từ Google Drive...")
             gdown.download(url, tmp_file.name, quiet=False)
-            with open(tmp_file.name, "rb") as f:
-                return BytesIO(f.read())
+            
+            if os.path.getsize(tmp_file.name) > 0:
+                with open(tmp_file.name, "rb") as f:
+                    content = f.read()
+                os.unlink(tmp_file.name)  # Clean up
+                return BytesIO(content)
     except Exception as e:
-        st.error(f"Lỗi khi tải file từ Google Drive: {e}")
-        return None
+        st.warning(f"Method 1 failed: {e}")
+    
+    # Method 2: Try alternative gdown approach
+    try:
+        with tempfile.NamedTemporaryFile(delete=False, suffix=".zip") as tmp_file:
+            st.info(f"Thử phương pháp thay thế...")
+            gdown.download(f"https://drive.google.com/file/d/{file_id}/view?usp=sharing", 
+                          tmp_file.name, quiet=False, fuzzy=True)
+            
+            if os.path.getsize(tmp_file.name) > 0:
+                with open(tmp_file.name, "rb") as f:
+                    content = f.read()
+                os.unlink(tmp_file.name)  # Clean up
+                return BytesIO(content)
+    except Exception as e:
+        st.warning(f"Method 2 failed: {e}")
+    
+    # Method 3: Direct requests approach
+    try:
+        import requests
+        session = requests.Session()
+        
+        st.info("Thử tải trực tiếp...")
+        
+        # First request to get confirmation token
+        response = session.get(f"https://drive.google.com/uc?id={file_id}&export=download", 
+                              stream=True)
+        
+        # Check for virus scan warning
+        token = None
+        for key, value in response.cookies.items():
+            if key.startswith('download_warning'):
+                token = value
+                break
+        
+        if token:
+            params = {'id': file_id, 'confirm': token, 'export': 'download'}
+            response = session.get("https://drive.google.com/uc", params=params, stream=True)
+        
+        if response.status_code == 200 and response.headers.get('content-length', '0') != '0':
+            return BytesIO(response.content)
+            
+    except Exception as e:
+        st.error(f"Method 3 failed: {e}")
+    
+    st.error("Không thể tải file từ Google Drive. Vui lòng kiểm tra file ID và quyền truy cập.")
+    return None
 
 
 # Hàm trích xuất bảng từ HTML
@@ -50,11 +103,19 @@ def extract_tables_from_html(html_content):
 drive_file_id = "1A0yeEBAvLkX64PlatHboPAHhHVIcJICw"
 
 # Tải file ZIP
+st.info("🔄 Đang tải dữ liệu tài chính mặc định...")
 uploaded_file = download_zip_from_drive(drive_file_id)
 
 html_tables = {}
 
 # Xử lý file ZIP
+if uploaded_file is not None:
+    st.success("✅ Tải file thành công!")
+    st.info("📊 Đang xử lý dữ liệu...")
+else:
+    st.error("❌ Không thể tải file. Vui lòng thử lại sau.")
+    st.stop()
+
 if uploaded_file is not None:
     try:
         with zipfile.ZipFile(uploaded_file, "r") as zip_ref:
