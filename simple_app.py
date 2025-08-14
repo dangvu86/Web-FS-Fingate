@@ -152,7 +152,27 @@ def index():
 @app.route('/static/<path:filename>')
 def serve_static(filename):
     """Serve static files in production"""
+    print(f"[DEBUG] Serving static file: {filename}")
     return send_file(os.path.join('static', filename))
+
+@app.route('/debug')
+def debug_info():
+    """Debug endpoint to check production environment"""
+    import sys
+    import os
+    
+    debug_data = {
+        'python_version': sys.version,
+        'current_dir': os.getcwd(),
+        'static_exists': os.path.exists('static'),
+        'background_exists': os.path.exists('static/background/DC.png'),
+        'templates_exists': os.path.exists('templates'),
+        'environment_vars': {
+            'PORT': os.environ.get('PORT', 'Not set'),
+            'IS_PRODUCTION': 'PORT' in os.environ
+        }
+    }
+    return jsonify(debug_data)
 
 @app.route('/upload', methods=['POST'])
 def upload_file():
@@ -234,28 +254,42 @@ def auto_load():
     # Default file ID from the original fs_extract.py
     default_file_id = "1A0yeEBAvLkX64PlatHboPAHhHVIcJICw"
     
-    print(f"Auto-loading default file ID: {default_file_id}")
+    print(f"[DEBUG] Auto-loading default file ID: {default_file_id}")
     
-    zip_file = download_zip_from_drive(default_file_id)
-    if zip_file is None:
-        return jsonify({'error': 'Failed to auto-load default data from Google Drive. Please check your internet connection.'})
-    
-    tables = process_zip_file(zip_file)
-    if tables is None:
-        return jsonify({'error': 'Default file is not a valid ZIP file'})
-    
-    if not tables:
-        return jsonify({'error': 'No HTML files found in the default ZIP archive'})
-    
-    tables_data = {}
-    for name, table_data in tables.items():
-        if isinstance(table_data, list):
-            tables_data[name] = table_data
-        else:
-            tables_data[name] = {'error': str(table_data)}
-    
-    print(f"Successfully loaded {len(tables_data)} tables from default file")
-    return jsonify({'tables': tables_data})
+    try:
+        zip_file = download_zip_from_drive(default_file_id)
+        if zip_file is None:
+            print(f"[ERROR] Failed to download from Google Drive")
+            return jsonify({'error': 'Failed to auto-load default data from Google Drive. Please check your internet connection.'})
+        
+        print(f"[DEBUG] Successfully downloaded ZIP file")
+        
+        tables = process_zip_file(zip_file)
+        if tables is None:
+            print(f"[ERROR] Invalid ZIP file")
+            return jsonify({'error': 'Default file is not a valid ZIP file'})
+        
+        if not tables:
+            print(f"[ERROR] No HTML files found in ZIP")
+            return jsonify({'error': 'No HTML files found in the default ZIP archive'})
+        
+        print(f"[DEBUG] Found {len(tables)} raw tables")
+        
+        tables_data = {}
+        for name, table_data in tables.items():
+            if isinstance(table_data, list):
+                tables_data[name] = table_data
+                print(f"[DEBUG] Table {name}: {len(table_data)} rows")
+            else:
+                tables_data[name] = {'error': str(table_data)}
+                print(f"[ERROR] Table {name} has error: {table_data}")
+        
+        print(f"[SUCCESS] Successfully loaded {len(tables_data)} tables from default file")
+        return jsonify({'tables': tables_data})
+        
+    except Exception as e:
+        print(f"[ERROR] Exception in auto_load: {str(e)}")
+        return jsonify({'error': f'Server error: {str(e)}'})
 
 @app.route('/export_excel', methods=['POST'])
 def export_excel():
