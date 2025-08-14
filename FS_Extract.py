@@ -227,22 +227,98 @@ if html_tables:
             mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
         )
 
-    tabs = st.tabs(list(html_tables.keys()))
+    tabs = st.tabs([name.replace('.html', '').upper() for name in html_tables.keys()])
     for tab, name in zip(tabs, html_tables.keys()):
         with tab:
             table = html_tables[name]
             if isinstance(table, pd.DataFrame):
-                df_formatted = table.copy()
-                for col in df_formatted.select_dtypes(include='number').columns:
-                    df_formatted[col] = df_formatted[col].apply(lambda x: f"{int(x):,}" if pd.notnull(x) else "")
-                df_formatted.columns = df_formatted.columns.map(str)
-                styles = [{'selector': 'th', 'props': [('text-align', 'center')]}]
-                styles.append({'selector': 'td.col0', 'props': [('text-align', 'left')]} )
-                for i in range(1, len(df_formatted.columns)):
-                    styles.append({'selector': f'td.col{i}', 'props': [('text-align', 'right')]} )
-                styled_table = df_formatted.style.set_table_styles(styles).set_table_attributes('style="font-size:12px;"')
-                st.markdown(styled_table.to_html(), unsafe_allow_html=True)
+                # Display table info
+                st.info(f"📊 {name.replace('.html', '')} - {len(table)} rows x {len(table.columns)} columns")
+                
+                # Create formatted dataframe
+                df_display = table.copy()
+                
+                # Format numeric columns with proper alignment
+                column_config = {}
+                for col in df_display.columns:
+                    if col == df_display.columns[0]:  # First column (descriptions)
+                        column_config[col] = st.column_config.TextColumn(
+                            col,
+                            help="Financial metrics",
+                            width="large"
+                        )
+                    else:  # Numeric columns
+                        if df_display[col].dtype in ['int64', 'float64']:
+                            column_config[col] = st.column_config.NumberColumn(
+                                col,
+                                help="Financial data",
+                                format="%.0f"
+                            )
+                        else:
+                            column_config[col] = st.column_config.TextColumn(col)
+                
+                # Display with st.dataframe for better formatting
+                st.dataframe(
+                    df_display,
+                    column_config=column_config,
+                    use_container_width=True,
+                    hide_index=True
+                )
+                
+                # Add summary statistics
+                numeric_cols = df_display.select_dtypes(include=['int64', 'float64']).columns
+                if len(numeric_cols) > 1:
+                    st.subheader("📈 Key Metrics")
+                    
+                    col1, col2, col3 = st.columns(3)
+                    
+                    # Find revenue row
+                    revenue_row = None
+                    for idx, row in df_display.iterrows():
+                        first_cell = str(row.iloc[0]).lower()
+                        if 'revenue' in first_cell and 'net' in first_cell:
+                            revenue_row = idx
+                            break
+                    
+                    if revenue_row is not None:
+                        latest_year = numeric_cols[-1]  # Last column
+                        prev_year = numeric_cols[-2] if len(numeric_cols) > 1 else None
+                        
+                        latest_revenue = df_display.iloc[revenue_row][latest_year]
+                        with col1:
+                            st.metric(
+                                label="Latest Revenue",
+                                value=f"{latest_revenue/1e9:.1f}B VND" if pd.notnull(latest_revenue) else "N/A"
+                            )
+                        
+                        if prev_year is not None:
+                            prev_revenue = df_display.iloc[revenue_row][prev_year]
+                            if pd.notnull(prev_revenue) and pd.notnull(latest_revenue) and prev_revenue != 0:
+                                growth = ((latest_revenue - prev_revenue) / abs(prev_revenue)) * 100
+                                with col2:
+                                    st.metric(
+                                        label="Revenue Growth",
+                                        value=f"{growth:.1f}%",
+                                        delta=f"{growth:.1f}%"
+                                    )
+                    
+                    # Find profit row
+                    profit_row = None
+                    for idx, row in df_display.iterrows():
+                        first_cell = str(row.iloc[0]).lower()
+                        if 'net profit' in first_cell and 'after tax' in first_cell:
+                            profit_row = idx
+                            break
+                    
+                    if profit_row is not None:
+                        latest_profit = df_display.iloc[profit_row][latest_year]
+                        with col3:
+                            st.metric(
+                                label="Latest Net Profit",
+                                value=f"{latest_profit/1e9:.1f}B VND" if pd.notnull(latest_profit) else "N/A"
+                            )
+                            
             else:
-                st.error(table)
+                st.error(f"❌ Error processing {name}: {table}")
 else:
     st.info("Không tìm thấy bảng nào trong file ZIP hoặc lỗi khi xử lý file.")
