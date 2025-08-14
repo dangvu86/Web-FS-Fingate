@@ -119,18 +119,50 @@ else:
 if uploaded_file is not None:
     try:
         with zipfile.ZipFile(uploaded_file, "r") as zip_ref:
-            html_files = [f for f in zip_ref.namelist() if f.lower().endswith(".html")]
+            all_files = zip_ref.namelist()
+            st.info(f"📁 Tìm thấy {len(all_files)} files trong ZIP: {', '.join(all_files[:5])}{'...' if len(all_files) > 5 else ''}")
+            
+            html_files = [f for f in all_files if f.lower().endswith(".html")]
+            st.info(f"📄 Tìm thấy {len(html_files)} HTML files: {', '.join(html_files)}")
+            
+            if not html_files:
+                st.warning("⚠️ Không tìm thấy file HTML nào trong ZIP.")
+                st.info("Danh sách tất cả files:")
+                for f in all_files:
+                    st.write(f"- {f}")
+            
             for html_file in html_files:
+                st.info(f"🔄 Đang xử lý {html_file}...")
                 with zip_ref.open(html_file) as file:
                     html_content = file.read().decode("utf-8")
                     result = extract_tables_from_html(html_content)
                     html_tables[html_file] = result
+                    
+                    if isinstance(result, pd.DataFrame):
+                        st.success(f"✅ Xử lý thành công {html_file} - {len(result)} rows")
+                    else:
+                        st.warning(f"⚠️ {html_file}: {result}")
+                        
     except zipfile.BadZipFile:
         st.error("File tải về không phải là file ZIP hợp lệ.")
+    except Exception as e:
+        st.error(f"Lỗi khi xử lý ZIP file: {e}")
 else:
     st.info("Không thể tải file ZIP từ Google Drive.")
 
 # Hiển thị và xuất bảng
+st.info(f"📊 Tổng số bảng được xử lý: {len(html_tables)}")
+
+if html_tables:
+    st.success("🎉 Tìm thấy dữ liệu! Đang hiển thị bảng...")
+else:
+    st.error("❌ Không tìm thấy bảng dữ liệu nào.")
+    st.info("Có thể nguyên nhân:")
+    st.write("- File ZIP không chứa file HTML")
+    st.write("- File HTML không có bảng dữ liệu")
+    st.write("- Lỗi trong quá trình xử lý")
+    st.stop()
+
 if html_tables:
     output_all = BytesIO()
     with pd.ExcelWriter(output_all, engine='xlsxwriter') as writer:
