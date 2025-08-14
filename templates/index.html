@@ -361,6 +361,12 @@
                 } else if (data.tables && Object.keys(data.tables).length > 0) {
                     tablesData = data.tables;
                     displayTables(data.tables);
+                    
+                    // Force show results card
+                    const resultsCard = document.getElementById('resultsCard');
+                    resultsCard.style.display = 'block';
+                    resultsCard.style.visibility = 'visible';
+                    console.log('[DEBUG] Forced results card visibility');
                 } else {
                     console.warn('No tables found in data');
                     document.getElementById('resultsCard').innerHTML = `
@@ -483,7 +489,10 @@
             
             try {
                 updateChartsForTable(firstTable);
-                document.getElementById('chartsContainer').style.display = 'block';
+                const chartsContainer = document.getElementById('chartsContainer');
+            chartsContainer.style.display = 'block';
+            chartsContainer.style.visibility = 'visible';  
+            console.log('[DEBUG] Charts container display set to:', chartsContainer.style.display);
                 console.log('[DEBUG] Charts created successfully');
             } catch (error) {
                 console.error('[ERROR] Chart creation failed:', error);

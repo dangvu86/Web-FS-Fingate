@@ -254,7 +254,7 @@ def auto_load():
     # Default file ID from the original fs_extract.py
     default_file_id = "1A0yeEBAvLkX64PlatHboPAHhHVIcJICw"
     
-    print(f"[DEBUG] Auto-loading default file ID: {default_file_id}")
+    print(f"[DEBUG] Auto-loading default file ID: {default_file_id}", flush=True)
     
     try:
         zip_file = download_zip_from_drive(default_file_id)
@@ -262,7 +262,7 @@ def auto_load():
             print(f"[ERROR] Failed to download from Google Drive")
             return jsonify({'error': 'Failed to auto-load default data from Google Drive. Please check your internet connection.'})
         
-        print(f"[DEBUG] Successfully downloaded ZIP file")
+        print(f"[DEBUG] Successfully downloaded ZIP file", flush=True)
         
         tables = process_zip_file(zip_file)
         if tables is None:
@@ -284,7 +284,7 @@ def auto_load():
                 tables_data[name] = {'error': str(table_data)}
                 print(f"[ERROR] Table {name} has error: {table_data}")
         
-        print(f"[SUCCESS] Successfully loaded {len(tables_data)} tables from default file")
+        print(f"[SUCCESS] Successfully loaded {len(tables_data)} tables from default file", flush=True)
         return jsonify({'tables': tables_data})
         
     except Exception as e:
