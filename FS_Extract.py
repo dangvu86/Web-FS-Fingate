@@ -83,20 +83,60 @@ def extract_tables_from_html(html_content):
     soup = BeautifulSoup(html_content, "html.parser")
     tables = soup.find_all("table")
     if tables:
+        # Method 1: Try pandas read_html with different parsers
+        for parser in ['lxml', 'html5lib', 'html.parser']:
+            try:
+                df = pd.read_html(StringIO(str(tables[0])), flavor=parser)[0]
+                if isinstance(df.columns, pd.MultiIndex):
+                    df.columns = [' '.join(map(str, col)).strip() for col in df.columns]
+                
+                # Clean data
+                df.iloc[0, 0] = str(df.iloc[0, 0]).replace('.', '').replace(')', '').replace('(', '-').replace(',', '')
+                for col in df.columns[1:]:
+                    df[col] = df[col].astype(str).str.replace('.', '', regex=False)
+                    df[col] = df[col].astype(str).str.replace(')', '', regex=False)
+                    df[col] = df[col].astype(str).str.replace('(', '-', regex=False)
+                    df[col] = df[col].astype(str).str.replace(',', '', regex=False)
+                    df[col] = pd.to_numeric(df[col], errors="coerce")
+                return df
+            except Exception as e:
+                continue
+        
+        # Method 2: Manual parsing with BeautifulSoup as fallback
         try:
-            df = pd.read_html(StringIO(str(tables[0])))[0]
-            if isinstance(df.columns, pd.MultiIndex):
-                df.columns = [' '.join(map(str, col)).strip() for col in df.columns]
-            df.iloc[0, 0] = str(df.iloc[0, 0]).replace('.', '').replace(')', '').replace('(', '-').replace(',', '')
-            for col in df.columns[1:]:
-                df[col] = df[col].astype(str).str.replace('.', '', regex=False)
-                df[col] = df[col].astype(str).str.replace(')', '', regex=False)
-                df[col] = df[col].astype(str).str.replace('(', '-', regex=False)
-                df[col] = df[col].astype(str).str.replace(',', '', regex=False)
-                df[col] = pd.to_numeric(df[col], errors="coerce")
-            return df
+            table = tables[0]
+            rows = table.find_all("tr")
+            
+            table_data = []
+            headers = []
+            
+            for i, row in enumerate(rows):
+                cells = row.find_all(["th", "td"])
+                row_data = []
+                for cell in cells:
+                    text = cell.get_text(strip=True)
+                    # Clean the data
+                    text = text.replace('.', '').replace(')', '').replace('(', '-').replace(',', '')
+                    row_data.append(text)
+                
+                if i == 0:  # Header row
+                    headers = row_data
+                else:
+                    table_data.append(row_data)
+            
+            if headers and table_data:
+                df = pd.DataFrame(table_data, columns=headers)
+                
+                # Convert numeric columns
+                for col in df.columns[1:]:  # Skip first column (descriptions)
+                    df[col] = pd.to_numeric(df[col], errors="coerce")
+                
+                return df
+            else:
+                return "Không thể parse table structure"
+                
         except Exception as e:
-            return f"Lỗi khi đọc bảng: {e}"
+            return f"Lỗi manual parsing: {e}"
     return "Không tìm thấy bảng nào trong file HTML."
 
 # ID của file ZIP trên Google Drive
