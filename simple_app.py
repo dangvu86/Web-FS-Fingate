@@ -149,6 +149,11 @@ def process_zip_file(zip_file):
 def index():
     return render_template('index.html')
 
+@app.route('/static/<path:filename>')
+def serve_static(filename):
+    """Serve static files in production"""
+    return send_file(os.path.join('static', filename))
+
 @app.route('/upload', methods=['POST'])
 def upload_file():
     if 'file' not in request.files:

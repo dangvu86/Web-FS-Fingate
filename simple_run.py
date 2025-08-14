@@ -6,8 +6,8 @@ if __name__ == '__main__':
     # Get port from environment variable (for deployment platforms)
     port = int(os.environ.get('PORT', 5000))
     
-    # Check if running in production
-    is_production = os.environ.get('ENVIRONMENT') == 'production'
+    # Check if running in production (Render sets PORT env var)
+    is_production = 'PORT' in os.environ
     
     if is_production:
         print(f"\nStarting FS Fingate Web Application in PRODUCTION mode...")
