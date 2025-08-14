@@ -390,8 +390,15 @@
         }
 
         function displayTables(tables) {
+            console.log('[DEBUG] displayTables called with:', Object.keys(tables));
+            
             const tabsContainer = document.getElementById('tableTabs');
             const contentContainer = document.getElementById('tableContent');
+            
+            if (!tabsContainer || !contentContainer) {
+                console.error('[ERROR] Required DOM elements not found');
+                return;
+            }
             
             tabsContainer.innerHTML = '';
             contentContainer.innerHTML = '';
@@ -458,6 +465,8 @@
         let currentChartsData = null;
         
         function createCharts(tables) {
+            console.log('[DEBUG] createCharts called');
+            
             // Store tables data for later use
             window.tablesData = tables;
             
@@ -465,12 +474,20 @@
             const firstTableName = Object.keys(tables)[0];
             const firstTable = tables[firstTableName];
             
+            console.log('[DEBUG] First table:', firstTableName, 'Data rows:', firstTable ? firstTable.length : 'null');
+            
             if (!firstTable || firstTable.error) {
+                console.error('[ERROR] No valid first table found');
                 return;
             }
             
-            updateChartsForTable(firstTable);
-            document.getElementById('chartsContainer').style.display = 'block';
+            try {
+                updateChartsForTable(firstTable);
+                document.getElementById('chartsContainer').style.display = 'block';
+                console.log('[DEBUG] Charts created successfully');
+            } catch (error) {
+                console.error('[ERROR] Chart creation failed:', error);
+            }
         }
         
         function updateChartsForTable(tableData) {
@@ -1342,10 +1359,43 @@
             });
         }
 
+        // Check if required libraries loaded
+        function checkDependencies() {
+            const missing = [];
+            
+            if (typeof Chart === 'undefined') {
+                missing.push('Chart.js');
+            }
+            if (typeof bootstrap === 'undefined') {
+                missing.push('Bootstrap');
+            }
+            
+            if (missing.length > 0) {
+                console.error('[ERROR] Missing dependencies:', missing);
+                document.getElementById('resultsCard').innerHTML = `
+                    <div class="alert alert-danger">
+                        <h5>CDN Loading Error</h5>
+                        <p>Failed to load required libraries: ${missing.join(', ')}</p>
+                        <p>This might be due to network issues or CDN being blocked.</p>
+                        <button class="btn btn-primary" onclick="location.reload()">Reload Page</button>
+                    </div>
+                `;
+                document.getElementById('resultsCard').style.display = 'block';
+                return false;
+            }
+            
+            console.log('[DEBUG] All dependencies loaded successfully');
+            return true;
+        }
+
         // Auto-load data when page loads
         window.addEventListener('load', function() {
-            console.log('Page loaded, loading financial data...');
-            loadData();
+            console.log('Page loaded, checking dependencies...');
+            
+            if (checkDependencies()) {
+                console.log('Loading financial data...');
+                loadData();
+            }
         });
     </script>
 </body>
