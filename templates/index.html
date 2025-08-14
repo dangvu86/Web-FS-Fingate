@@ -1,0 +1,484 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FS Fingate - Table Extractor</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        * {
+            font-family: 'Manrope', -apple-system, BlinkMacSystemFont, sans-serif;
+        }
+        
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+        
+        .main-container {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            margin: 20px;
+            padding: 30px;
+        }
+        
+        .header-title {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            font-weight: 800;
+            font-size: 2.5rem;
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        
+        .status-badge {
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            color: white;
+            border-radius: 15px;
+            padding: 12px 24px;
+            font-weight: 600;
+            border: none;
+            box-shadow: 0 4px 15px rgba(79, 172, 254, 0.3);
+        }
+        
+        .table-container {
+            max-height: 600px;
+            overflow-y: auto;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 8px 25px rgba(0,0,0,0.08);
+            padding: 20px;
+        }
+        
+        table { 
+            width: 100%; 
+            border-collapse: separate;
+            border-spacing: 0;
+            margin: 0;
+            font-size: 12px;
+            font-family: 'Manrope', sans-serif;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.05);
+        }
+        
+        th, td { 
+            border: none;
+            border-bottom: 1px solid #e9ecef;
+            padding: 12px 16px; 
+            text-align: left;
+            font-size: 12px;
+            line-height: 1.4;
+            font-family: 'Manrope', sans-serif;
+        }
+        
+        th { 
+            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+            font-weight: 700;
+            font-size: 11px;
+            color: #495057;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        
+        .fiscal-year-col {
+            background: linear-gradient(135deg, #fff3cd 0%, #ffeaa7 100%) !important;
+            font-weight: 700 !important;
+            text-align: center !important;
+            color: #856404 !important;
+            font-family: 'Manrope', sans-serif !important;
+        }
+        
+        .number-col {
+            text-align: right !important;
+            font-family: 'Manrope', sans-serif !important;
+            font-weight: 500;
+            color: #2d3748;
+        }
+        
+        .nav-tabs {
+            border: none;
+            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+            border-radius: 12px;
+            padding: 8px;
+            margin-bottom: 20px;
+        }
+        
+        .nav-tabs .nav-link {
+            border: none;
+            color: #6c757d;
+            font-weight: 600;
+            border-radius: 8px;
+            margin-right: 4px;
+            font-family: 'Manrope', sans-serif;
+            transition: all 0.3s ease;
+        }
+        
+        .nav-tabs .nav-link.active {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+        }
+        
+        .nav-tabs .nav-link:hover {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            transform: translateY(-2px);
+        }
+        
+        .loading {
+            display: none;
+        }
+        
+        .loading .spinner-border {
+            width: 3rem;
+            height: 3rem;
+        }
+        
+        .card {
+            border: none;
+            border-radius: 20px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.08);
+        }
+        
+        .card-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-radius: 20px 20px 0 0 !important;
+            border: none;
+            padding: 20px 25px;
+        }
+        
+        .card-header h5 {
+            margin: 0;
+            font-weight: 700;
+            font-family: 'Manrope', sans-serif;
+        }
+        
+        .btn-success {
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            border: none;
+            border-radius: 12px;
+            padding: 10px 20px;
+            font-weight: 600;
+            font-family: 'Manrope', sans-serif;
+            box-shadow: 0 4px 15px rgba(79, 172, 254, 0.3);
+            transition: all 0.3s ease;
+        }
+        
+        .btn-success:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(79, 172, 254, 0.4);
+        }
+        
+        .table-striped tbody tr:nth-of-type(odd) {
+            background: linear-gradient(135deg, #f8f9fa 0%, #fff 100%);
+        }
+        
+        .table-hover tbody tr:hover {
+            background: linear-gradient(135deg, #e3f2fd 0%, #f3e5f5 100%);
+            transform: scale(1.001);
+            transition: all 0.2s ease;
+        }
+    </style>
+</head>
+<body>
+    <div class="container-fluid">
+        <div class="main-container">
+            <h1 class="header-title">
+                <i class="fas fa-chart-line"></i> FS Fingate
+            </h1>
+            <div class="text-center mb-4">
+                <div class="status-badge d-inline-block">
+                    <i class="fas fa-cloud-download-alt"></i> Financial Data - Auto-loaded from Google Drive
+                </div>
+            </div>
+
+            <!-- Loading -->
+            <div class="text-center loading" id="loading">
+                <div class="spinner-border" style="color: #667eea;" role="status">
+                    <span class="visually-hidden">Loading...</span>
+                </div>
+                <p class="mt-3" style="color: #667eea; font-weight: 600;">
+                    <i class="fab fa-google-drive"></i> Loading financial data...
+                </p>
+            </div>
+
+            <!-- Results Section -->
+            <div class="card" id="resultsCard" style="display: none;">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5><i class="fas fa-table"></i> Financial Data Tables</h5>
+                    <button class="btn btn-success btn-lg" id="exportAllBtn">
+                        <i class="fas fa-file-excel"></i> Export to Excel
+                    </button>
+                </div>
+                <div class="card-body">
+                    <ul class="nav nav-tabs" id="tableTabs" role="tablist">
+                    </ul>
+                    <div class="tab-content" id="tableContent">
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        let tablesData = {};
+
+        document.getElementById('exportAllBtn').addEventListener('click', exportToExcel);
+
+        function showLoading() {
+            document.getElementById('loading').style.display = 'block';
+            document.getElementById('resultsCard').style.display = 'none';
+        }
+
+        function hideLoading() {
+            document.getElementById('loading').style.display = 'none';
+        }
+
+        function loadData() {
+            showLoading();
+            
+            fetch('/auto_load', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                hideLoading();
+                if (data.error) {
+                    console.error('Error loading data:', data.error);
+                    document.getElementById('resultsCard').innerHTML = `
+                        <div class="alert alert-danger">
+                            <h5>Failed to Load Data</h5>
+                            <p>${data.error}</p>
+                            <button class="btn btn-primary" onclick="loadData()">Try Again</button>
+                        </div>
+                    `;
+                    document.getElementById('resultsCard').style.display = 'block';
+                } else {
+                    tablesData = data.tables;
+                    displayTables(data.tables);
+                }
+            })
+            .catch(error => {
+                hideLoading();
+                console.error('Network error:', error);
+                document.getElementById('resultsCard').innerHTML = `
+                    <div class="alert alert-warning">
+                        <h5>Connection Error</h5>
+                        <p>Unable to load data. Please check your internet connection.</p>
+                        <button class="btn btn-primary" onclick="loadData()">Retry</button>
+                    </div>
+                `;
+                document.getElementById('resultsCard').style.display = 'block';
+            });
+        }
+
+        function displayTables(tables) {
+            const tabsContainer = document.getElementById('tableTabs');
+            const contentContainer = document.getElementById('tableContent');
+            
+            tabsContainer.innerHTML = '';
+            contentContainer.innerHTML = '';
+            
+            let isFirst = true;
+            
+            Object.keys(tables).forEach(tableName => {
+                const tabId = 'tab-' + tableName.replace(/[^a-zA-Z0-9]/g, '');
+                
+                // Create tab
+                const tabLi = document.createElement('li');
+                tabLi.className = 'nav-item';
+                tabLi.innerHTML = `
+                    <button class="nav-link ${isFirst ? 'active' : ''}" 
+                            id="${tabId}-tab" 
+                            data-bs-toggle="tab" 
+                            data-bs-target="#${tabId}" 
+                            type="button">
+                        ${tableName}
+                    </button>
+                `;
+                tabsContainer.appendChild(tabLi);
+                
+                // Create tab content
+                const tabContent = document.createElement('div');
+                tabContent.className = `tab-pane fade ${isFirst ? 'show active' : ''}`;
+                tabContent.id = tabId;
+                
+                const table = tables[tableName];
+                if (table.error) {
+                    tabContent.innerHTML = `<div class="alert alert-danger">${table.error}</div>`;
+                } else {
+                    tabContent.innerHTML = `
+                        <div class="table-container">
+                            ${createTableHTML(table)}
+                        </div>
+                    `;
+                }
+                
+                contentContainer.appendChild(tabContent);
+                isFirst = false;
+            });
+            
+            document.getElementById('resultsCard').style.display = 'block';
+        }
+
+        function createTableHTML(data) {
+            if (!data || data.length === 0) {
+                return '<div class="alert alert-info">No data available</div>';
+            }
+            
+            const headers = Object.keys(data[0]);
+            let html = '<table class="table table-striped table-hover"><thead><tr>';
+            
+            headers.forEach((header, index) => {
+                const isFiscalYear = header.toLowerCase().includes('fiscal') && header.toLowerCase().includes('year');
+                const headerClass = isFiscalYear ? 'fiscal-year-col' : '';
+                // Clean header names - remove repeated words
+                let cleanHeader = cleanHeaderName(header);
+                html += `<th class="${headerClass}">${cleanHeader}</th>`;
+            });
+            html += '</tr></thead><tbody>';
+            
+            data.forEach(row => {
+                html += '<tr>';
+                headers.forEach((header, index) => {
+                    const value = row[header] || '';
+                    const isFiscalYear = header.toLowerCase().includes('fiscal') && header.toLowerCase().includes('year');
+                    const isNumber = !isFiscalYear && !isNaN(value) && value !== '' && !isNaN(parseFloat(value));
+                    
+                    let cellClass = '';
+                    let formattedValue = value;
+                    
+                    if (isFiscalYear) {
+                        cellClass = 'fiscal-year-col';
+                        formattedValue = value;
+                    } else if (isNumber) {
+                        cellClass = 'number-col';
+                        formattedValue = formatNumberWithCommas(value);
+                    } else {
+                        // Clean cell values - remove repeated words for audit status
+                        formattedValue = cleanCellValue(value);
+                    }
+                    
+                    html += `<td class="${cellClass}">${formattedValue}</td>`;
+                });
+                html += '</tr>';
+            });
+            
+            html += '</tbody></table>';
+            return html;
+        }
+
+        function cleanHeaderName(header) {
+            // Clean up header names
+            return header
+                .replace(/\s+/g, ' ')  // Replace multiple spaces with single space
+                .trim();
+        }
+
+        function cleanCellValue(value) {
+            if (typeof value !== 'string') return value;
+            
+            // Special handling for audit status - remove repeated words
+            if (value.toLowerCase().includes('audit')) {
+                // Split into words and remove duplicates while preserving order
+                const words = value.split(/\s+/);
+                const uniqueWords = [];
+                const seen = new Set();
+                
+                for (let word of words) {
+                    const lowerWord = word.toLowerCase();
+                    if (!seen.has(lowerWord)) {
+                        seen.add(lowerWord);
+                        uniqueWords.push(word);
+                    }
+                }
+                
+                return uniqueWords.join(' ');
+            }
+            
+            return value;
+        }
+
+        function formatNumber(value) {
+            if (value === '' || value === null || value === undefined) return '';
+            if (typeof value === 'number' && !isNaN(value)) {
+                return value.toLocaleString();
+            }
+            return value;
+        }
+
+        function formatNumberWithCommas(value) {
+            if (value === '' || value === null || value === undefined) return '';
+            
+            // Convert to number if it's a string
+            let num = parseFloat(value);
+            if (isNaN(num)) return value;
+            
+            // Handle negative numbers
+            const isNegative = num < 0;
+            num = Math.abs(num);
+            
+            // Format with commas
+            let formattedNum = num.toLocaleString('en-US', {
+                minimumFractionDigits: 0,
+                maximumFractionDigits: 2
+            });
+            
+            // Add negative sign back if needed
+            if (isNegative) {
+                formattedNum = '-' + formattedNum;
+            }
+            
+            return formattedNum;
+        }
+
+        function exportToExcel() {
+            if (Object.keys(tablesData).length === 0) {
+                alert('No tables to export');
+                return;
+            }
+            
+            fetch('/export_excel', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({tables: tablesData})
+            })
+            .then(response => response.blob())
+            .then(blob => {
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.style.display = 'none';
+                a.href = url;
+                a.download = 'all_tables.xlsx';
+                document.body.appendChild(a);
+                a.click();
+                window.URL.revokeObjectURL(url);
+                document.body.removeChild(a);
+            })
+            .catch(error => {
+                alert('Error exporting to Excel: ' + error.message);
+            });
+        }
+
+        // Auto-load data when page loads
+        window.addEventListener('load', function() {
+            console.log('Page loaded, loading financial data...');
+            loadData();
+        });
+    </script>
+</body>
+</html>
