@@ -7,14 +7,22 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         * {
             font-family: 'Manrope', -apple-system, BlinkMacSystemFont, sans-serif;
         }
         
         body {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background-image: url('/static/background/DC.png');
+            background-size: cover;
+            background-position: center;
+            background-attachment: fixed;
+            background-repeat: no-repeat;
             min-height: 100vh;
+            /* Overlay for better text readability */
+            background-color: rgba(12, 65, 48, 0.1);
+            background-blend-mode: overlay;
         }
         
         .main-container {
@@ -27,7 +35,7 @@
         }
         
         .header-title {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: linear-gradient(135deg, #0C4130 0%, #08C179 100%);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
             background-clip: text;
@@ -38,13 +46,13 @@
         }
         
         .status-badge {
-            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            background: linear-gradient(135deg, #08C179 0%, #B78D51 100%);
             color: white;
             border-radius: 15px;
             padding: 12px 24px;
             font-weight: 600;
             border: none;
-            box-shadow: 0 4px 15px rgba(79, 172, 254, 0.3);
+            box-shadow: 0 4px 15px rgba(8, 193, 121, 0.3);
         }
         
         .table-container {
@@ -54,6 +62,16 @@
             border-radius: 15px;
             box-shadow: 0 8px 25px rgba(0,0,0,0.08);
             padding: 20px;
+            position: relative;
+        }
+        
+        .analysis-row {
+            border-top: 2px solid #0C4130 !important;
+            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%) !important;
+        }
+        
+        .analysis-row td {
+            border-bottom: 1px solid #e9ecef !important;
         }
         
         table { 
@@ -79,21 +97,48 @@
         }
         
         th { 
-            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+            background: linear-gradient(135deg, #0C4130 0%, #08C179 100%) !important;
             font-weight: 700;
-            font-size: 11px;
-            color: #495057;
-            text-transform: uppercase;
+            font-size: 12px;
+            color: white !important;
+            text-transform: none;
             letter-spacing: 0.5px;
+            text-align: center !important;
+            padding: 15px 12px !important;
+            position: sticky !important;
+            top: 0 !important;
+            z-index: 100 !important;
         }
         
         .fiscal-year-col {
-            background: linear-gradient(135deg, #fff3cd 0%, #ffeaa7 100%) !important;
             font-weight: 700 !important;
             text-align: center !important;
-            color: #856404 !important;
+            color: #495057 !important;
             font-family: 'Manrope', sans-serif !important;
         }
+        
+        th.audit-status-col {
+            background: linear-gradient(135deg, #0C4130 0%, #08C179 100%) !important;
+            font-weight: 800 !important;
+            text-align: center !important;
+            color: white !important;
+            font-family: 'Manrope', sans-serif !important;
+            font-size: 14px !important;
+            text-transform: uppercase !important;
+            letter-spacing: 1px !important;
+            position: sticky !important;
+            top: 0 !important;
+            z-index: 100 !important;
+        }
+        
+        td.audit-status-col {
+            background: transparent !important;
+            font-weight: 700 !important;
+            text-align: left !important;
+            color: #495057 !important;
+            font-family: 'Manrope', sans-serif !important;
+        }
+        
         
         .number-col {
             text-align: right !important;
@@ -121,13 +166,13 @@
         }
         
         .nav-tabs .nav-link.active {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: linear-gradient(135deg, #0C4130 0%, #08C179 100%);
             color: white;
-            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+            box-shadow: 0 4px 15px rgba(12, 65, 48, 0.3);
         }
         
         .nav-tabs .nav-link:hover {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: linear-gradient(135deg, #12654A 0%, #08C179 100%);
             color: white;
             transform: translateY(-2px);
         }
@@ -148,7 +193,7 @@
         }
         
         .card-header {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: linear-gradient(135deg, #0C4130 0%, #12654A 100%);
             color: white;
             border-radius: 20px 20px 0 0 !important;
             border: none;
@@ -162,19 +207,20 @@
         }
         
         .btn-success {
-            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            background: linear-gradient(135deg, #08C179 0%, #014ABD 100%);
             border: none;
             border-radius: 12px;
             padding: 10px 20px;
             font-weight: 600;
             font-family: 'Manrope', sans-serif;
-            box-shadow: 0 4px 15px rgba(79, 172, 254, 0.3);
+            box-shadow: 0 4px 15px rgba(8, 193, 121, 0.3);
             transition: all 0.3s ease;
         }
         
         .btn-success:hover {
+            background: linear-gradient(135deg, #12654A 0%, #FF671B 100%);
             transform: translateY(-2px);
-            box-shadow: 0 6px 20px rgba(79, 172, 254, 0.4);
+            box-shadow: 0 6px 20px rgba(8, 193, 121, 0.4);
         }
         
         .table-striped tbody tr:nth-of-type(odd) {
@@ -186,6 +232,31 @@
             transform: scale(1.001);
             transition: all 0.2s ease;
         }
+        
+        .charts-container {
+            margin-top: 30px;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 8px 25px rgba(0,0,0,0.08);
+            padding: 30px;
+        }
+        
+        .chart-title {
+            background: linear-gradient(135deg, #0C4130 0%, #08C179 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            font-weight: 700;
+            font-size: 1.5rem;
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        
+        .chart-wrapper {
+            position: relative;
+            height: 400px;
+            margin-bottom: 40px;
+        }
     </style>
 </head>
 <body>
@@ -194,11 +265,6 @@
             <h1 class="header-title">
                 <i class="fas fa-chart-line"></i> FS Fingate
             </h1>
-            <div class="text-center mb-4">
-                <div class="status-badge d-inline-block">
-                    <i class="fas fa-cloud-download-alt"></i> Financial Data - Auto-loaded from Google Drive
-                </div>
-            </div>
 
             <!-- Loading -->
             <div class="text-center loading" id="loading">
@@ -222,6 +288,25 @@
                     <ul class="nav nav-tabs" id="tableTabs" role="tablist">
                     </ul>
                     <div class="tab-content" id="tableContent">
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Charts Section -->
+            <div class="charts-container" id="chartsContainer" style="display: none;">
+                <div class="row">
+                    <!-- Chart 1: Revenue & Profit with Growth -->
+                    <div class="col-md-6">
+                        <div class="chart-wrapper">
+                            <canvas id="revenueChart"></canvas>
+                        </div>
+                    </div>
+                    
+                    <!-- Chart 2: Margins -->
+                    <div class="col-md-6">
+                        <div class="chart-wrapper">
+                            <canvas id="marginChart"></canvas>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -252,9 +337,17 @@
                     'Content-Type': 'application/json',
                 }
             })
-            .then(response => response.json())
+            .then(response => {
+                console.log('Response status:', response.status);
+                console.log('Response ok:', response.ok);
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                return response.json();
+            })
             .then(data => {
                 hideLoading();
+                console.log('Received data:', data);
                 if (data.error) {
                     console.error('Error loading data:', data.error);
                     document.getElementById('resultsCard').innerHTML = `
@@ -265,18 +358,30 @@
                         </div>
                     `;
                     document.getElementById('resultsCard').style.display = 'block';
-                } else {
+                } else if (data.tables && Object.keys(data.tables).length > 0) {
                     tablesData = data.tables;
                     displayTables(data.tables);
+                } else {
+                    console.warn('No tables found in data');
+                    document.getElementById('resultsCard').innerHTML = `
+                        <div class="alert alert-info">
+                            <h5>No Data Found</h5>
+                            <p>No tables were found in the ZIP file.</p>
+                            <button class="btn btn-primary" onclick="loadData()">Try Again</button>
+                        </div>
+                    `;
+                    document.getElementById('resultsCard').style.display = 'block';
                 }
             })
             .catch(error => {
                 hideLoading();
-                console.error('Network error:', error);
+                console.error('Detailed error:', error);
+                console.error('Error message:', error.message);
+                console.error('Error stack:', error.stack);
                 document.getElementById('resultsCard').innerHTML = `
                     <div class="alert alert-warning">
                         <h5>Connection Error</h5>
-                        <p>Unable to load data. Please check your internet connection.</p>
+                        <p>Unable to load data. Error: ${error.message}</p>
                         <button class="btn btn-primary" onclick="loadData()">Retry</button>
                     </div>
                 `;
@@ -295,6 +400,8 @@
             
             Object.keys(tables).forEach(tableName => {
                 const tabId = 'tab-' + tableName.replace(/[^a-zA-Z0-9]/g, '');
+                // Clean tab name: remove .html extension and convert to uppercase
+                const cleanTabName = tableName.replace(/\.html$/, '').toUpperCase();
                 
                 // Create tab
                 const tabLi = document.createElement('li');
@@ -305,10 +412,22 @@
                             data-bs-toggle="tab" 
                             data-bs-target="#${tabId}" 
                             type="button">
-                        ${tableName}
+                        ${cleanTabName}
                     </button>
                 `;
                 tabsContainer.appendChild(tabLi);
+                
+                // Add click event listener for chart updates
+                const tabButton = tabLi.querySelector('.nav-link');
+                tabButton.addEventListener('click', function() {
+                    // Update charts when tab is clicked
+                    setTimeout(() => {
+                        const tableData = tables[tableName];
+                        if (tableData && !tableData.error) {
+                            updateChartsForTable(tableData);
+                        }
+                    }, 100); // Small delay to ensure tab is fully switched
+                });
                 
                 // Create tab content
                 const tabContent = document.createElement('div');
@@ -331,6 +450,379 @@
             });
             
             document.getElementById('resultsCard').style.display = 'block';
+            
+            // Create charts after tables are displayed
+            createCharts(tables);
+        }
+        
+        let currentChartsData = null;
+        
+        function createCharts(tables) {
+            // Store tables data for later use
+            window.tablesData = tables;
+            
+            // Get data from first table initially
+            const firstTableName = Object.keys(tables)[0];
+            const firstTable = tables[firstTableName];
+            
+            if (!firstTable || firstTable.error) {
+                return;
+            }
+            
+            updateChartsForTable(firstTable);
+            document.getElementById('chartsContainer').style.display = 'block';
+        }
+        
+        function updateChartsForTable(tableData) {
+            const chartData = extractChartData(tableData);
+            
+            if (chartData) {
+                // Destroy existing charts if they exist
+                if (window.revenueChart && typeof window.revenueChart.destroy === 'function') {
+                    window.revenueChart.destroy();
+                }
+                if (window.marginChart && typeof window.marginChart.destroy === 'function') {
+                    window.marginChart.destroy();
+                }
+                
+                // Create new charts
+                window.revenueChart = createRevenueChart(chartData);
+                window.marginChart = createMarginChart(chartData);
+                currentChartsData = chartData;
+            }
+        }
+        
+        function extractChartData(data) {
+            if (!data || data.length === 0) return null;
+            
+            const allHeaders = Object.keys(data[0]);
+            
+            // Find audit status column
+            const auditStatusHeader = allHeaders.find(header => 
+                header.toLowerCase().includes('fiscal') && 
+                header.toLowerCase().includes('audit') && 
+                header.toLowerCase().includes('status')
+            );
+            
+            if (!auditStatusHeader) return null;
+            
+            const numericHeaders = allHeaders.filter(h => h !== auditStatusHeader);
+            
+            // Extract years from headers
+            const years = numericHeaders.map(header => {
+                const dateMatch = header.match(/(\d{1,2}-\w{3}-\d{4})/);
+                if (dateMatch) {
+                    return new Date(dateMatch[1]).getFullYear();
+                }
+                const yearMatch = header.match(/(\d{4})/);
+                return yearMatch ? parseInt(yearMatch[1]) : header;
+            });
+            
+            // Find revenue row (same logic as table - look for "3. Net revenue")
+            const revenueRow = data.find(row => {
+                const firstCell = row[auditStatusHeader];
+                if (!firstCell) return false;
+                const cellText = firstCell.toString().toLowerCase();
+                // More specific search for "3. net revenue" or just "net revenue"
+                return cellText.includes('3. net revenue') || 
+                       (cellText.includes('3') && cellText.includes('net') && cellText.includes('revenue')) ||
+                       (cellText.includes('net revenue') && !cellText.includes('growth'));
+            });
+            
+            // Find net profit row (row 18 - same logic as table)
+            const netProfitRow = data.find(row => {
+                const firstCell = row[auditStatusHeader];
+                if (!firstCell) return false;
+                const cellText = firstCell.toString().toLowerCase();
+                return cellText.includes('18') && cellText.includes('net profit') && cellText.includes('after tax');
+            });
+            
+            // Find gross profit row (same logic as table)
+            const grossProfitRow = data.find(row => {
+                const firstCell = row[auditStatusHeader];
+                if (!firstCell) return false;
+                const cellText = firstCell.toString().toLowerCase();
+                return cellText.includes('gross') && cellText.includes('profit');
+            });
+            
+            if (!revenueRow) {
+                console.log('No revenue row found for charts');
+                return null;
+            }
+            
+            console.log('Chart data extraction:');
+            console.log('Revenue row:', revenueRow);
+            console.log('Net profit row:', netProfitRow);
+            console.log('Gross profit row:', grossProfitRow);
+            
+            // Extract revenue values
+            const revenueValues = numericHeaders.map(header => {
+                const value = revenueRow[header];
+                return typeof value === 'number' ? value : parseFloat(value) || 0;
+            });
+            
+            // Extract net profit values
+            const netProfitValues = netProfitRow ? numericHeaders.map(header => {
+                const value = netProfitRow[header];
+                return typeof value === 'number' ? value : parseFloat(value) || 0;
+            }) : [];
+            
+            // Extract gross profit values
+            const grossProfitValues = grossProfitRow ? numericHeaders.map(header => {
+                const value = grossProfitRow[header];
+                return typeof value === 'number' ? value : parseFloat(value) || 0;
+            }) : [];
+            
+            // Calculate growth rates (same logic as table)
+            const revenueGrowth = [];
+            const netProfitGrowth = [];
+            
+            for (let i = 1; i < revenueValues.length; i++) {
+                // Revenue growth (standard calculation)
+                if (revenueValues[i-1] !== 0) {
+                    const revGrowth = ((revenueValues[i] - revenueValues[i-1]) / Math.abs(revenueValues[i-1]) * 100);
+                    revenueGrowth.push(revGrowth);
+                } else {
+                    revenueGrowth.push(null);
+                }
+                
+                // Net profit growth (with LTP/PTL logic)
+                if (netProfitValues.length > i) {
+                    const currentYear = netProfitValues[i];
+                    const previousYear = netProfitValues[i-1];
+                    
+                    const prevIsProfit = previousYear > 0;
+                    const currIsProfit = currentYear > 0;
+                    
+                    if (!prevIsProfit && currIsProfit) {
+                        // Loss to Profit - use null for chart (can't display text)
+                        netProfitGrowth.push(null);
+                    } else if (prevIsProfit && !currIsProfit) {
+                        // Profit to Loss - use null for chart
+                        netProfitGrowth.push(null);
+                    } else if (!prevIsProfit && !currIsProfit) {
+                        // Both years loss - use null for chart
+                        netProfitGrowth.push(null);
+                    } else if (previousYear !== 0) {
+                        // Both years profit - calculate normal growth
+                        const profitGrowth = ((currentYear - previousYear) / previousYear * 100);
+                        netProfitGrowth.push(profitGrowth);
+                    } else {
+                        netProfitGrowth.push(null);
+                    }
+                }
+            }
+            
+            // Calculate margins
+            const grossMargins = [];
+            const netMargins = [];
+            
+            for (let i = 0; i < revenueValues.length; i++) {
+                if (grossProfitValues.length > i && revenueValues[i] !== 0) {
+                    grossMargins.push((grossProfitValues[i] / revenueValues[i] * 100));
+                }
+                if (netProfitValues.length > i && revenueValues[i] !== 0) {
+                    netMargins.push((netProfitValues[i] / revenueValues[i] * 100));
+                }
+            }
+            
+            const result = {
+                years,
+                revenueValues,
+                netProfitValues,
+                revenueGrowth,
+                netProfitGrowth,
+                grossMargins,
+                netMargins
+            };
+            
+            console.log('Chart data result:', result);
+            return result;
+        }
+        
+        function createRevenueChart(chartData) {
+            const ctx = document.getElementById('revenueChart').getContext('2d');
+            
+            return new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: chartData.years,
+                    datasets: [
+                        {
+                            label: 'Net Revenue',
+                            data: chartData.revenueValues,
+                            backgroundColor: 'rgba(12, 65, 48, 0.7)',
+                            borderColor: '#0C4130',
+                            borderWidth: 2,
+                            yAxisID: 'y'
+                        },
+                        {
+                            label: 'Net Profit',
+                            data: chartData.netProfitValues,
+                            backgroundColor: 'rgba(8, 193, 121, 0.7)',
+                            borderColor: '#08C179',
+                            borderWidth: 2,
+                            yAxisID: 'y'
+                        },
+                        {
+                            label: 'Revenue Growth (%)',
+                            data: [null, ...chartData.revenueGrowth],
+                            type: 'line',
+                            borderColor: '#B78D51',
+                            backgroundColor: 'rgba(183, 141, 81, 0.1)',
+                            borderWidth: 3,
+                            yAxisID: 'y1',
+                            tension: 0.4
+                        },
+                        {
+                            label: 'Profit Growth (%)',
+                            data: [null, ...chartData.netProfitGrowth],
+                            type: 'line',
+                            borderColor: '#FF671B',
+                            backgroundColor: 'rgba(255, 103, 27, 0.1)',
+                            borderWidth: 3,
+                            yAxisID: 'y1',
+                            tension: 0.4
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        title: {
+                            display: true,
+                            text: 'Revenue & Profit Analysis',
+                            font: {
+                                size: 16,
+                                weight: 'bold',
+                                family: 'Manrope'
+                            }
+                        },
+                        legend: {
+                            position: 'top',
+                            labels: {
+                                font: {
+                                    family: 'Manrope'
+                                }
+                            }
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    const datasetLabel = context.dataset.label || '';
+                                    const value = context.parsed.y;
+                                    
+                                    if (datasetLabel.includes('Growth')) {
+                                        return datasetLabel + ': ' + value.toFixed(1) + '%';
+                                    } else {
+                                        return datasetLabel + ': ' + (value / 1000000000).toFixed(1) + 'bn VND';
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        y: {
+                            type: 'linear',
+                            display: true,
+                            position: 'left',
+                            title: {
+                                display: true,
+                                text: 'Amount (bn VND)',
+                                font: {
+                                    family: 'Manrope'
+                                }
+                            },
+                            ticks: {
+                                callback: function(value, index, values) {
+                                    return (value / 1000000000).toFixed(1) + 'bn';
+                                }
+                            }
+                        },
+                        y1: {
+                            type: 'linear',
+                            display: true,
+                            position: 'right',
+                            title: {
+                                display: true,
+                                text: 'Growth Rate (%)',
+                                font: {
+                                    family: 'Manrope'
+                                }
+                            },
+                            grid: {
+                                drawOnChartArea: false,
+                            },
+                        }
+                    }
+                }
+            });
+        }
+        
+        function createMarginChart(chartData) {
+            const ctx = document.getElementById('marginChart').getContext('2d');
+            
+            return new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: chartData.years,
+                    datasets: [
+                        {
+                            label: 'Gross Margin (%)',
+                            data: chartData.grossMargins,
+                            borderColor: '#0C4130',
+                            backgroundColor: 'rgba(12, 65, 48, 0.1)',
+                            borderWidth: 3,
+                            fill: true,
+                            tension: 0.4
+                        },
+                        {
+                            label: 'Net Margin (%)',
+                            data: chartData.netMargins,
+                            borderColor: '#08C179',
+                            backgroundColor: 'rgba(8, 193, 121, 0.1)',
+                            borderWidth: 3,
+                            fill: true,
+                            tension: 0.4
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        title: {
+                            display: true,
+                            text: 'Margin Analysis',
+                            font: {
+                                size: 16,
+                                weight: 'bold',
+                                family: 'Manrope'
+                            }
+                        },
+                        legend: {
+                            position: 'top',
+                            labels: {
+                                font: {
+                                    family: 'Manrope'
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        y: {
+                            title: {
+                                display: true,
+                                text: 'Margin (%)',
+                                font: {
+                                    family: 'Manrope'
+                                }
+                            }
+                        }
+                    }
+                }
+            });
         }
 
         function createTableHTML(data) {
@@ -338,37 +830,71 @@
                 return '<div class="alert alert-info">No data available</div>';
             }
             
-            const headers = Object.keys(data[0]);
+            const allHeaders = Object.keys(data[0]);
+            
+            // Find the audit status column and put it first
+            const auditStatusHeader = allHeaders.find(header => 
+                header.toLowerCase().includes('fiscal') && 
+                header.toLowerCase().includes('audit') && 
+                header.toLowerCase().includes('status')
+            );
+            
+            // Reorder headers: audit status first, then the rest
+            let headers = [];
+            if (auditStatusHeader) {
+                headers.push(auditStatusHeader);
+                headers.push(...allHeaders.filter(h => h !== auditStatusHeader));
+            } else {
+                headers = allHeaders;
+            }
+            
             let html = '<table class="table table-striped table-hover"><thead><tr>';
             
             headers.forEach((header, index) => {
                 const isFiscalYear = header.toLowerCase().includes('fiscal') && header.toLowerCase().includes('year');
-                const headerClass = isFiscalYear ? 'fiscal-year-col' : '';
-                // Clean header names - remove repeated words
-                let cleanHeader = cleanHeaderName(header);
+                const isAuditStatus = header.toLowerCase().includes('audit') && header.toLowerCase().includes('status');
+                const isDateColumn = header.match(/\d{1,2}[-\/]\w{3}[-\/]\d{4}/) || header.match(/\d{1,2}\/\d{1,2}\/\d{4}/);
+                
+                let headerClass = '';
+                let cleanHeader = '';
+                
+                if (isAuditStatus) {
+                    headerClass = 'audit-status-col';
+                    cleanHeader = 'Fiscal Year'; // Just show "Fiscal Year"
+                } else {
+                    // All other headers use default th styling (green background, white text)
+                    headerClass = '';
+                    cleanHeader = cleanHeaderName(header);
+                }
+                
                 html += `<th class="${headerClass}">${cleanHeader}</th>`;
             });
             html += '</tr></thead><tbody>';
             
-            data.forEach(row => {
+            data.forEach((row, rowIndex) => {
                 html += '<tr>';
                 headers.forEach((header, index) => {
                     const value = row[header] || '';
                     const isFiscalYear = header.toLowerCase().includes('fiscal') && header.toLowerCase().includes('year');
-                    const isNumber = !isFiscalYear && !isNaN(value) && value !== '' && !isNaN(parseFloat(value));
+                    const isAuditStatus = header.toLowerCase().includes('audit') && header.toLowerCase().includes('status');
+                    const isDateColumn = !!(header.match(/\d{1,2}[-\/]\w{3}[-\/]\d{4}/) || header.match(/\d{1,2}\/\d{1,2}\/\d{4}/));
+                    // For data cells, if the value is purely numeric, treat it as number regardless of header
+                    const isNumber = !isFiscalYear && !isAuditStatus && (typeof value === 'number' || (!isNaN(value) && value !== '' && !isNaN(parseFloat(value)) && typeof value !== 'string'));
                     
                     let cellClass = '';
                     let formattedValue = value;
                     
-                    if (isFiscalYear) {
-                        cellClass = 'fiscal-year-col';
-                        formattedValue = value;
-                    } else if (isNumber) {
-                        cellClass = 'number-col';
-                        formattedValue = formatNumberWithCommas(value);
-                    } else {
-                        // Clean cell values - remove repeated words for audit status
+                    if (isAuditStatus) {
+                        cellClass = 'audit-status-col';
                         formattedValue = cleanCellValue(value);
+                    } else {
+                        // All other columns align right
+                        cellClass = 'number-col';
+                        if (isNumber) {
+                            formattedValue = formatNumberWithCommas(value);
+                        } else {
+                            formattedValue = cleanCellValue(value);
+                        }
                     }
                     
                     html += `<td class="${cellClass}">${formattedValue}</td>`;
@@ -376,11 +902,337 @@
                 html += '</tr>';
             });
             
+            // Add Growth rows at the end
+            const netRevenueGrowthHTML = createGrowthRowHTML(data, headers, 'revenue', 'Net Revenue Growth (%)');
+            const grossProfitGrowthHTML = createGrowthRowHTML(data, headers, 'gross', 'Gross Profit Growth (%)');
+            const netProfitGrowthHTML = createGrowthRowHTML(data, headers, 'net profit', 'Net Profit Growth (%)');
+            
+            // Add Margin rows
+            const grossMarginHTML = createMarginRowHTML(data, headers, 'gross', 'Gross Margin (%)');
+            const netMarginHTML = createMarginRowHTML(data, headers, 'net', 'Net Margin (%)');
+            
+            if (netRevenueGrowthHTML) html += netRevenueGrowthHTML;
+            if (grossProfitGrowthHTML) html += grossProfitGrowthHTML;
+            if (netProfitGrowthHTML) html += netProfitGrowthHTML;
+            if (grossMarginHTML) html += grossMarginHTML;
+            if (netMarginHTML) html += netMarginHTML;
+            
             html += '</tbody></table>';
             return html;
         }
 
+        function createGrowthRowHTML(data, headers, searchTerm, labelText) {
+            if (!data || data.length === 0) {
+                return '';
+            }
+            
+            // Find the audit status header
+            const auditStatusHeader = headers.find(header => 
+                header.toLowerCase().includes('fiscal') && 
+                header.toLowerCase().includes('audit') && 
+                header.toLowerCase().includes('status')
+            );
+            
+            // Find the target row based on search term
+            const targetRow = data.find(row => {
+                const firstCell = row[auditStatusHeader];
+                if (!firstCell) return false;
+                
+                const cellText = firstCell.toString().toLowerCase();
+                if (searchTerm === 'revenue') {
+                    return cellText.includes('revenue') || cellText.includes('1 revenue');
+                } else if (searchTerm === 'gross') {
+                    return cellText.includes('gross') && cellText.includes('profit');
+                } else if (searchTerm === 'net profit') {
+                    return cellText.includes('18') && cellText.includes('net profit') && cellText.includes('after tax');
+                }
+                return false;
+            });
+            
+            if (!targetRow) {
+                return '';
+            }
+            
+            // Get numeric headers (exclude first column)
+            const numericHeaders = headers.filter(header => header !== auditStatusHeader);
+            
+            // Get target values
+            const targetValues = [];
+            numericHeaders.forEach(header => {
+                const value = targetRow[header];
+                if (typeof value === 'number') {
+                    targetValues.push(value);
+                }
+            });
+            
+            if (targetValues.length < 2) {
+                return '';
+            }
+            
+            // Helper function to calculate growth with profit/loss logic
+            function calculateGrowthDisplay(current, previous, isRevenueMetric = false) {
+                if (isRevenueMetric) {
+                    // For revenue, use standard growth calculation
+                    const growthRate = ((current - previous) / Math.abs(previous) * 100).toFixed(1);
+                    const isPositive = parseFloat(growthRate) >= 0;
+                    const colorClass = isPositive ? 'text-success' : 'text-danger';
+                    const arrow = isPositive ? '↗' : '↘';
+                    return `<span class="${colorClass}">${arrow} ${growthRate}%</span>`;
+                } else {
+                    // For profit metrics, use special logic
+                    const prevIsProfit = previous > 0;
+                    const currIsProfit = current > 0;
+                    
+                    if (!prevIsProfit && currIsProfit) {
+                        // Loss to Profit
+                        return '<span class="text-success">↗ LTP</span>';
+                    } else if (prevIsProfit && !currIsProfit) {
+                        // Profit to Loss
+                        return '<span class="text-danger">↘ PTL</span>';
+                    } else if (!prevIsProfit && !currIsProfit) {
+                        // Both years loss
+                        return '<span class="text-warning">━ Loss</span>';
+                    } else {
+                        // Both years profit - calculate normal growth
+                        const growthRate = ((current - previous) / previous * 100).toFixed(1);
+                        const isPositive = parseFloat(growthRate) >= 0;
+                        const colorClass = isPositive ? 'text-success' : 'text-danger';
+                        const arrow = isPositive ? '↗' : '↘';
+                        return `<span class="${colorClass}">${arrow} ${growthRate}%</span>`;
+                    }
+                }
+            }
+            
+            // Create growth row HTML
+            let html = '<tr class="analysis-row">';
+            
+            // First cell - label with appropriate icon
+            const icon = searchTerm === 'revenue' ? 'fa-chart-line' : 'fa-coins';
+            html += `<td class="audit-status-col" style="font-weight: 800; color: #0C4130;"><i class="fas ${icon}"></i> ${labelText}</td>`;
+            
+            // Calculate and add growth for each year
+            const isRevenueMetric = searchTerm === 'revenue';
+            for (let i = 0; i < numericHeaders.length; i++) {
+                if (i === 0) {
+                    // First year - leave empty (no growth data)
+                    html += '<td class="number-col"></td>';
+                } else {
+                    const currentYear = targetValues[i];
+                    const previousYear = targetValues[i - 1];
+                    const growthDisplay = calculateGrowthDisplay(currentYear, previousYear, isRevenueMetric);
+                    
+                    html += `<td class="number-col" style="font-weight: 700;">${growthDisplay}</td>`;
+                }
+            }
+            
+            html += '</tr>';
+            return html;
+        }
+
+        function createMarginRowHTML(data, headers, marginType, labelText) {
+            if (!data || data.length === 0) {
+                return '';
+            }
+            
+            // Find the audit status header
+            const auditStatusHeader = headers.find(header => 
+                header.toLowerCase().includes('fiscal') && 
+                header.toLowerCase().includes('audit') && 
+                header.toLowerCase().includes('status')
+            );
+            
+            // Find revenue row
+            const revenueRow = data.find(row => {
+                const firstCell = row[auditStatusHeader];
+                if (!firstCell) return false;
+                const cellText = firstCell.toString().toLowerCase();
+                return cellText.includes('revenue') || cellText.includes('1 revenue');
+            });
+            
+            // Find profit row based on margin type
+            const profitRow = data.find(row => {
+                const firstCell = row[auditStatusHeader];
+                if (!firstCell) return false;
+                const cellText = firstCell.toString().toLowerCase();
+                
+                if (marginType === 'gross') {
+                    return cellText.includes('gross') && cellText.includes('profit');
+                } else if (marginType === 'net') {
+                    return cellText.includes('18') && cellText.includes('net profit') && cellText.includes('after tax');
+                }
+                return false;
+            });
+            
+            if (!revenueRow || !profitRow) {
+                return '';
+            }
+            
+            // Get numeric headers (exclude first column)
+            const numericHeaders = headers.filter(header => header !== auditStatusHeader);
+            
+            // Create margin row HTML
+            let html = '<tr class="analysis-row">';
+            
+            // First cell - label
+            html += `<td class="audit-status-col" style="font-weight: 800; color: #0C4130;"><i class="fas fa-percentage"></i> ${labelText}</td>`;
+            
+            // Calculate margin for each year
+            numericHeaders.forEach(header => {
+                const revenueValue = revenueRow[header];
+                const profitValue = profitRow[header];
+                
+                if (typeof revenueValue === 'number' && typeof profitValue === 'number' && revenueValue !== 0) {
+                    const margin = (profitValue / revenueValue * 100).toFixed(1);
+                    const marginNum = parseFloat(margin);
+                    
+                    if (marginNum < 0) {
+                        html += '<td class="number-col text-danger" style="font-weight: 700;">Neg</td>';
+                    } else {
+                        const colorClass = marginNum >= 0 ? 'text-success' : 'text-danger';
+                        html += `<td class="number-col ${colorClass}" style="font-weight: 700;">${margin}%</td>`;
+                    }
+                } else {
+                    html += '<td class="number-col">-</td>';
+                }
+            });
+            
+            html += '</tr>';
+            return html;
+        }
+
+        function createGrowthTableHTML(data) {
+            console.log('Creating growth table for data:', data);
+            if (!data || data.length === 0) {
+                console.log('No data available for growth table');
+                return '';
+            }
+            
+            // Find the first row (Net Revenue row) - check the fiscal year column (first column)
+            const allHeaders = Object.keys(data[0]);
+            const auditStatusHeader = allHeaders.find(header => 
+                header.toLowerCase().includes('fiscal') && 
+                header.toLowerCase().includes('audit') && 
+                header.toLowerCase().includes('status')
+            );
+            
+            const netRevenueRow = data.find(row => {
+                const firstCell = row[auditStatusHeader];
+                const hasRevenue = firstCell && (firstCell.toString().toLowerCase().includes('revenue') || firstCell.toString().includes('1 Revenue'));
+                console.log('Checking row:', firstCell, 'has revenue:', hasRevenue);
+                return hasRevenue;
+            });
+            
+            console.log('Found net revenue row:', netRevenueRow);
+            if (!netRevenueRow) {
+                console.log('No net revenue row found');
+                return '';
+            }
+            
+            // Get all numeric columns (exclude first column which is description)
+            
+            const numericHeaders = allHeaders.filter(header => header !== auditStatusHeader);
+            
+            // Get revenue values
+            const revenueValues = [];
+            const yearHeaders = [];
+            
+            numericHeaders.forEach(header => {
+                const value = netRevenueRow[header];
+                if (typeof value === 'number' && value > 0) {
+                    revenueValues.push(value);
+                    yearHeaders.push(header);
+                }
+            });
+            
+            console.log('Revenue values found:', revenueValues);
+            console.log('Year headers:', yearHeaders);
+            
+            if (revenueValues.length < 2) {
+                console.log('Not enough revenue values to calculate growth');
+                return '';
+            }
+            
+            console.log('Creating growth table HTML...');
+            // Calculate growth rates
+            let html = `
+                <div class="card">
+                    <div class="card-header">
+                        <h5><i class="fas fa-chart-line"></i> Net Revenue Growth (%)</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="table-container">
+                            <table class="table table-striped table-hover">
+                                <thead>
+                                    <tr>
+                                        <th class="audit-status-col">Metric</th>
+            `;
+            
+            // Add year headers (skip first year as we can't calculate growth)
+            for (let i = 1; i < yearHeaders.length; i++) {
+                const cleanHeader = cleanHeaderName(yearHeaders[i]);
+                html += `<th>${cleanHeader}</th>`;
+            }
+            
+            html += `
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td class="audit-status-col">Net Revenue Growth</td>
+            `;
+            
+            // Calculate and add growth percentages
+            for (let i = 1; i < revenueValues.length; i++) {
+                const currentYear = revenueValues[i];
+                const previousYear = revenueValues[i - 1];
+                const growthRate = ((currentYear - previousYear) / previousYear * 100).toFixed(2);
+                const isPositive = parseFloat(growthRate) >= 0;
+                const colorClass = isPositive ? 'text-success' : 'text-danger';
+                const arrow = isPositive ? '↗' : '↘';
+                
+                html += `<td class="number-col ${colorClass}"><strong>${arrow} ${growthRate}%</strong></td>`;
+            }
+            
+            html += `
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            return html;
+        }
+
         function cleanHeaderName(header) {
+            // Handle headers like "31-Dec-2020 200/2014/TT-BTC/LT UnauditedUnaudited"
+            if (header.includes('UnauditedUnaudited')) {
+                // Extract date and remove duplicate
+                const dateMatch = header.match(/(\d{1,2}-\w{3}-\d{4})/);
+                if (dateMatch) {
+                    const date = dateMatch[1];
+                    return `${date}<br/>Unaudited`;
+                }
+            }
+            
+            if (header.toLowerCase().includes('auditedaudited')) {
+                const dateMatch = header.match(/(\d{1,2}-\w{3}-\d{4})/);
+                if (dateMatch) {
+                    const date = dateMatch[1];
+                    return `${date}<br/>Audited`;
+                }
+            }
+            
+            // Handle Vietnamese "Chưa kiểm toánChưa kiểm toán"
+            if (header.includes('Chưa kiểm toánChưa kiểm toán')) {
+                const dateMatch = header.match(/(\d{1,2}\/\d{1,2}\/\d{4})/);
+                if (dateMatch) {
+                    const date = dateMatch[1];
+                    return `${date}<br/>Chưa kiểm toán`;
+                }
+            }
+            
             // Clean up header names
             return header
                 .replace(/\s+/g, ' ')  // Replace multiple spaces with single space
@@ -390,7 +1242,22 @@
         function cleanCellValue(value) {
             if (typeof value !== 'string') return value;
             
-            // Special handling for audit status - remove repeated words
+            // Handle other duplicate audit words
+            if (value.toLowerCase().includes('auditedaudited')) {
+                let cleanedValue = value.replace(/auditedaudited/gi, 'Audited');
+                
+                // Extract date pattern
+                const dateMatch = cleanedValue.match(/(\d{1,2}-\w{3}-\d{4})/);
+                
+                if (dateMatch) {
+                    const date = dateMatch[1];
+                    return `${date}<br/>Audited`;
+                }
+                
+                return cleanedValue;
+            }
+            
+            // General duplicate word removal for other cases
             if (value.toLowerCase().includes('audit')) {
                 // Split into words and remove duplicates while preserving order
                 const words = value.split(/\s+/);
@@ -430,10 +1297,10 @@
             const isNegative = num < 0;
             num = Math.abs(num);
             
-            // Format with commas
+            // Format with commas using US locale (comma separator)
             let formattedNum = num.toLocaleString('en-US', {
                 minimumFractionDigits: 0,
-                maximumFractionDigits: 2
+                maximumFractionDigits: 0
             });
             
             // Add negative sign back if needed
@@ -443,6 +1310,7 @@
             
             return formattedNum;
         }
+
 
         function exportToExcel() {
             if (Object.keys(tablesData).length === 0) {

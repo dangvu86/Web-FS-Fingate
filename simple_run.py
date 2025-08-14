@@ -1,35 +1,27 @@
 import sys
-import socket
+import os
 from simple_app import app
 
-def find_free_port():
-    """Find a free port to run the application"""
-    for port in range(5000, 5100):
-        try:
-            sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-            sock.bind(('localhost', port))
-            sock.close()
-            return port
-        except OSError:
-            continue
-    return 5000
-
 if __name__ == '__main__':
-    port = find_free_port()
-    print(f"\nStarting FS Fingate Web Application (Full Version)...")
-    print(f"Server will be available at:")
-    print(f"   - http://localhost:{port}")
-    print(f"   - http://127.0.0.1:{port}")
-    print(f"   - http://0.0.0.0:{port}")
-    print(f"\nIf localhost doesn't work, try:")
-    print(f"   - Check if Windows Firewall is blocking the connection")
-    print(f"   - Try running as Administrator")
-    print(f"   - Use http://127.0.0.1:{port} instead")
-    print(f"\nPress Ctrl+C to stop the server\n")
+    # Get port from environment variable (for deployment platforms)
+    port = int(os.environ.get('PORT', 5000))
     
-    try:
-        app.run(host='0.0.0.0', port=port, debug=True, threaded=True)
-    except Exception as e:
-        print(f"\nError starting server: {e}")
-        print(f"Try running: python -m flask run --host=0.0.0.0 --port={port}")
-        sys.exit(1)
+    # Check if running in production
+    is_production = os.environ.get('ENVIRONMENT') == 'production'
+    
+    if is_production:
+        print(f"\nStarting FS Fingate Web Application in PRODUCTION mode...")
+        app.run(host='0.0.0.0', port=port, debug=False, threaded=True)
+    else:
+        print(f"\nStarting FS Fingate Web Application in DEVELOPMENT mode...")
+        print(f"Server will be available at:")
+        print(f"   - http://localhost:{port}")
+        print(f"   - http://127.0.0.1:{port}")
+        print(f"   - http://0.0.0.0:{port}")
+        print(f"\nPress Ctrl+C to stop the server\n")
+        
+        try:
+            app.run(host='0.0.0.0', port=port, debug=True, threaded=True)
+        except Exception as e:
+            print(f"\nError starting server: {e}")
+            sys.exit(1)
