@@ -146,6 +146,159 @@ def extract_tables_from_html(html_content):
             return f"Lỗi khi đọc bảng: {e}"
     return "Không tìm thấy bảng nào trong file HTML."
 
+def create_growth_analysis_rows(df):
+    """Create growth analysis rows for revenue, profit, and margins"""
+    if df.empty or len(df) < 2:
+        return ""
+    
+    # Find numeric columns (exclude first column)
+    numeric_cols = []
+    for col in df.columns[1:]:
+        if df[col].dtype in ['int64', 'float64'] or pd.api.types.is_numeric_dtype(df[col]):
+            numeric_cols.append(col)
+    
+    if len(numeric_cols) < 2:
+        return ""
+    
+    growth_html = ""
+    
+    # 1. Net Revenue Growth
+    revenue_row = None
+    for idx, row in df.iterrows():
+        first_cell = str(row.iloc[0]).lower()
+        if 'net revenue' in first_cell or ('revenue' in first_cell and 'net' in first_cell):
+            revenue_row = idx
+            break
+    
+    if revenue_row is not None:
+        growth_html += create_growth_row_html(df, revenue_row, numeric_cols, "Net Revenue Growth (%)", "revenue")
+    
+    # 2. Gross Profit Growth
+    gross_profit_row = None
+    for idx, row in df.iterrows():
+        first_cell = str(row.iloc[0]).lower()
+        if 'gross profit' in first_cell:
+            gross_profit_row = idx
+            break
+    
+    if gross_profit_row is not None:
+        growth_html += create_growth_row_html(df, gross_profit_row, numeric_cols, "Gross Profit Growth (%)", "gross_profit")
+    
+    # 3. Net Profit Growth
+    net_profit_row = None
+    for idx, row in df.iterrows():
+        first_cell = str(row.iloc[0]).lower()
+        if 'net profit' in first_cell and 'after tax' in first_cell:
+            net_profit_row = idx
+            break
+    
+    if net_profit_row is not None:
+        growth_html += create_growth_row_html(df, net_profit_row, numeric_cols, "Net Profit Growth (%)", "net_profit")
+    
+    # 4. Gross Margin
+    if revenue_row is not None and gross_profit_row is not None:
+        growth_html += create_margin_row_html(df, revenue_row, gross_profit_row, numeric_cols, "Gross Margin (%)")
+    
+    # 5. Net Margin  
+    if revenue_row is not None and net_profit_row is not None:
+        growth_html += create_margin_row_html(df, revenue_row, net_profit_row, numeric_cols, "Net Margin (%)")
+    
+    return growth_html
+
+def create_growth_row_html(df, row_idx, numeric_cols, label, metric_type):
+    """Create a growth row for a specific metric"""
+    html = '<tr style="background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%); border-top: 2px solid #0C4130;">'
+    
+    # First column - label
+    icon = "📈" if metric_type == "revenue" else "💰"
+    html += f'<td class="first-col" style="font-weight: 700; color: #0C4130;">{icon} {label}</td>'
+    
+    # Get values for this row
+    values = []
+    for col in numeric_cols:
+        val = df.iloc[row_idx][col]
+        values.append(val if pd.notnull(val) else 0)
+    
+    # Calculate growth for each year (skip first year)
+    for i, col in enumerate(numeric_cols):
+        if i == 0:
+            # First year - no growth data
+            html += '<td class="number-col"></td>'
+        else:
+            current = values[i]
+            previous = values[i-1]
+            
+            if metric_type in ["gross_profit", "net_profit"]:
+                # Special profit growth logic
+                growth_display = calculate_profit_growth_display(current, previous)
+            else:
+                # Standard revenue growth
+                growth_display = calculate_revenue_growth_display(current, previous)
+            
+            html += f'<td class="number-col" style="font-weight: 600;">{growth_display}</td>'
+    
+    html += '</tr>'
+    return html
+
+def create_margin_row_html(df, revenue_row_idx, profit_row_idx, numeric_cols, label):
+    """Create a margin analysis row"""
+    html = '<tr style="background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%); border-top: 2px solid #0C4130;">'
+    
+    # First column - label
+    html += f'<td class="first-col" style="font-weight: 700; color: #0C4130;">📊 {label}</td>'
+    
+    # Calculate margin for each year
+    for col in numeric_cols:
+        revenue = df.iloc[revenue_row_idx][col]
+        profit = df.iloc[profit_row_idx][col]
+        
+        if pd.notnull(revenue) and pd.notnull(profit) and revenue != 0:
+            margin = (profit / revenue * 100)
+            if margin < 0:
+                html += f'<td class="number-col" style="font-weight: 600; color: #dc3545;">-{abs(margin):.1f}%</td>'
+            else:
+                color = "#28a745" if margin > 0 else "#6c757d"
+                html += f'<td class="number-col" style="font-weight: 600; color: {color};">{margin:.1f}%</td>'
+        else:
+            html += '<td class="number-col">-</td>'
+    
+    html += '</tr>'
+    return html
+
+def calculate_revenue_growth_display(current, previous):
+    """Calculate standard revenue growth percentage"""
+    if previous == 0:
+        return '<span style="color: #6c757d;">-</span>'
+    
+    growth = ((current - previous) / abs(previous)) * 100
+    color = "#28a745" if growth >= 0 else "#dc3545"
+    arrow = "↗" if growth >= 0 else "↘"
+    
+    return f'<span style="color: {color};">{arrow} {growth:.1f}%</span>'
+
+def calculate_profit_growth_display(current, previous):
+    """Calculate profit growth with LTP/PTL logic"""
+    prev_is_profit = previous > 0
+    curr_is_profit = current > 0
+    
+    if not prev_is_profit and curr_is_profit:
+        # Loss to Profit
+        return '<span style="color: #28a745;">↗ LTP</span>'
+    elif prev_is_profit and not curr_is_profit:
+        # Profit to Loss
+        return '<span style="color: #dc3545;">↘ PTL</span>'
+    elif not prev_is_profit and not curr_is_profit:
+        # Both years loss
+        return '<span style="color: #ffc107;">━ Loss</span>'
+    elif previous == 0:
+        return '<span style="color: #6c757d;">-</span>'
+    else:
+        # Both years profit - normal calculation
+        growth = ((current - previous) / abs(previous)) * 100
+        color = "#28a745" if growth >= 0 else "#dc3545"
+        arrow = "↗" if growth >= 0 else "↘"
+        return f'<span style="color: {color};">{arrow} {growth:.1f}%</span>'
+
 # ID của file ZIP trên Google Drive
 drive_file_id = "1A0yeEBAvLkX64PlatHboPAHhHVIcJICw"
 
@@ -200,8 +353,6 @@ if html_tables:
             table = html_tables[name]
             if isinstance(table, pd.DataFrame):
                 df_formatted = table.copy()
-                for col in df_formatted.select_dtypes(include='number').columns:
-                    df_formatted[col] = df_formatted[col].apply(lambda x: f"{x:,.2f}".rstrip('0').rstrip('.') if pd.notnull(x) else "")
                 # Remove Legal Regulation row if exists
                 if not df_formatted.empty and len(df_formatted) > 0:
                     legal_reg_mask = df_formatted.iloc[:, 0].astype(str).str.contains('Legal Regulation', case=False, na=False)
@@ -226,6 +377,9 @@ if html_tables:
                 
                 df_formatted.columns = clean_columns
                 
+                # Create a copy for growth analysis before formatting numbers as strings
+                df_for_growth = df_formatted.copy()
+                
                 # Create HTML table with enhanced styling for Streamlit Cloud compatibility
                 html_table = '<div><table class="custom-table">'
                 
@@ -235,7 +389,7 @@ if html_tables:
                     html_table += f'<th>{col}</th>'
                 html_table += '</tr></thead><tbody>'
                 
-                # Data rows with special styling for Audit Status
+                # Data rows with special styling for Audit Status and number formatting
                 for idx, row in df_formatted.iterrows():
                     first_cell = str(row.iloc[0]) if pd.notnull(row.iloc[0]) else ""
                     is_audit_status = 'audit status' in first_cell.lower()
@@ -244,10 +398,23 @@ if html_tables:
                     html_table += f'<tr class="{row_class}">'
                     
                     for i, cell in enumerate(row):
-                        cell_value = str(cell) if pd.notnull(cell) else ""
+                        if i == 0:
+                            # First column - keep as text
+                            cell_value = str(cell) if pd.notnull(cell) else ""
+                        else:
+                            # Numeric columns - format with commas
+                            if pd.notnull(cell) and isinstance(cell, (int, float)):
+                                cell_value = f"{cell:,.2f}".rstrip('0').rstrip('.')
+                            else:
+                                cell_value = str(cell) if pd.notnull(cell) else ""
+                        
                         col_class = 'first-col' if i == 0 else 'number-col'
                         html_table += f'<td class="{col_class}">{cell_value}</td>'
                     html_table += '</tr>'
+                
+                # Add growth analysis rows using the numeric dataframe
+                growth_rows_html = create_growth_analysis_rows(df_for_growth)
+                html_table += growth_rows_html
                 
                 html_table += '</tbody></table></div>'
                 st.markdown(html_table, unsafe_allow_html=True)
