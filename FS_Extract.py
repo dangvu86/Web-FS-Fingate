@@ -54,19 +54,22 @@ st.markdown("""
         width: 100% !important;
         margin: 1rem 0 !important;
         font-family: 'Arial', sans-serif !important;
+        font-size: 11px !important;
     }
     .custom-table th {
         background: linear-gradient(135deg, #0C4130 0%, #08C179 100%) !important;
         color: white !important;
         font-weight: 600 !important;
-        padding: 12px !important;
+        padding: 8px !important;
         text-align: center !important;
         border: 1px solid #ddd !important;
+        font-size: 11px !important;
     }
     .custom-table td {
-        padding: 10px !important;
+        padding: 6px !important;
         border: 1px solid #ddd !important;
         background: white !important;
+        font-size: 11px !important;
     }
     .custom-table .first-col {
         text-align: left !important;
