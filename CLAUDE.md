@@ -222,6 +222,7 @@ Three-tier fallback system:
 1. **Number Formatting**: Fixed isNumber detection logic, implemented reliable comma formatting
 2. **Dragon Capital Branding**: Applied consistent color scheme and background across both platforms
 3. **Cross-Platform Compatibility**: Ensured all fixes work in both Flask and Streamlit deployments
+4. **Growth Analysis Integration**: Added comprehensive financial analysis rows with color-coded indicators
 
 ## Important Development Notes
 
@@ -242,3 +243,39 @@ The Flask version uses a custom JavaScript function `formatNumberWithCommas()` t
 
 ### Streamlit Styling
 Custom CSS is injected via `st.markdown()` with `unsafe_allow_html=True` to maintain Dragon Capital branding consistency with the Flask version.
+
+## Growth Analysis Features (Streamlit Only)
+
+### Automated Financial Analysis Rows
+The Streamlit version automatically adds 5 analysis rows to each financial table:
+
+1. **📈 Net Revenue Growth (%)**: Standard year-over-year percentage calculation with ↗/↘ arrows
+2. **💰 Gross Profit Growth (%)**: Profit-specific growth with special loss handling
+3. **💰 Net Profit Growth (%)**: Advanced logic with LTP (Loss to Profit) and PTL (Profit to Loss) indicators
+4. **📊 Gross Margin (%)**: Revenue-to-gross-profit ratio analysis
+5. **📊 Net Margin (%)**: Revenue-to-net-profit ratio analysis
+
+### Growth Analysis Implementation
+- **Data Preservation**: Uses numeric dataframe copy before string formatting to maintain calculation accuracy
+- **Smart Detection**: Automatically identifies revenue, gross profit, and net profit rows using keyword matching
+- **Color Coding**: Green (positive), red (negative), yellow (loss scenarios)
+- **Special Indicators**: 
+  - LTP: Loss to Profit transition
+  - PTL: Profit to Loss transition
+  - "Loss": Both years show losses
+- **Visual Styling**: Analysis rows have gradient backgrounds and borders to distinguish from raw data
+
+### Technical Architecture
+```python
+def create_growth_analysis_rows(df):
+    # Preserves numeric data integrity for calculations
+    # Automatically detects revenue/profit rows via text matching
+    # Generates HTML with Dragon Capital styling
+    # Returns formatted growth analysis rows
+```
+
+### Header Cleaning Logic
+Streamlit version includes advanced header cleaning that extracts clean dates from complex column names:
+- Input: "31-Dec-2022 133/2016/TT-BTC/B01a-DNN UnauditedUnaudited"
+- Output: "31-Dec-2022"
+- Uses regex pattern matching to extract date components while removing regulatory and audit text
