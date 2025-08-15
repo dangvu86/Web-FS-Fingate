@@ -9,6 +9,91 @@ import os
 
 # Cấu hình giao diện
 st.set_page_config(layout="wide")
+
+# Dragon Capital styling
+st.markdown("""
+<style>
+    .stApp {
+        background: linear-gradient(135deg, #0C4130 0%, #08C179 100%);
+    }
+    .main .block-container {
+        background: rgba(255, 255, 255, 0.95);
+        backdrop-filter: blur(10px);
+        border-radius: 20px;
+        padding: 2rem;
+        margin: 1rem;
+        box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+    }
+    h1 {
+        background: linear-gradient(135deg, #0C4130 0%, #08C179 100%);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+        font-weight: 800;
+        text-align: center;
+    }
+    .stButton > button {
+        background: linear-gradient(135deg, #08C179 0%, #0C4130 100%);
+        color: white;
+        border: none;
+        border-radius: 12px;
+        font-weight: 600;
+        box-shadow: 0 4px 15px rgba(8, 193, 121, 0.3);
+    }
+    .stDownloadButton > button {
+        background: linear-gradient(135deg, #08C179 0%, #0C4130 100%);
+        color: white;
+        border: none;
+        border-radius: 12px;
+        font-weight: 600;
+        box-shadow: 0 4px 15px rgba(8, 193, 121, 0.3);
+    }
+    /* Dragon Capital table styling with !important for Streamlit Cloud */
+    .custom-table {
+        border-collapse: collapse !important;
+        width: 100% !important;
+        margin: 1rem 0 !important;
+        font-family: 'Arial', sans-serif !important;
+    }
+    .custom-table th {
+        background: linear-gradient(135deg, #0C4130 0%, #08C179 100%) !important;
+        color: white !important;
+        font-weight: 600 !important;
+        padding: 12px !important;
+        text-align: center !important;
+        border: 1px solid #ddd !important;
+    }
+    .custom-table td {
+        padding: 10px !important;
+        border: 1px solid #ddd !important;
+        background: white !important;
+    }
+    .custom-table .first-col {
+        text-align: left !important;
+        font-weight: 500 !important;
+    }
+    .custom-table .number-col {
+        text-align: right !important;
+    }
+    .custom-table .audit-status-row td {
+        background: linear-gradient(135deg, #0C4130 0%, #08C179 100%) !important;
+        color: white !important;
+        font-weight: 600 !important;
+    }
+    .custom-table .audit-status-row {
+        background: linear-gradient(135deg, #0C4130 0%, #08C179 100%) !important;
+    }
+    /* Override Streamlit default table styling */
+    .stMarkdown table {
+        border-collapse: collapse !important;
+    }
+    .stMarkdown th {
+        background: linear-gradient(135deg, #0C4130 0%, #08C179 100%) !important;
+        color: white !important;
+    }
+</style>
+""", unsafe_allow_html=True)
+
 st.title("FS Fingate")
 
 # Hàm tải file ZIP từ Google Drive
@@ -33,7 +118,19 @@ def extract_tables_from_html(html_content):
         try:
             df = pd.read_html(StringIO(str(tables[0])))[0]
             if isinstance(df.columns, pd.MultiIndex):
-                df.columns = [' '.join(map(str, col)).strip() for col in df.columns]
+                # Handle MultiIndex properly - only take the first level if second level has unwanted text
+                new_columns = []
+                for col in df.columns:
+                    if len(col) > 1:
+                        # If second level contains Legal Regulation or Audit Status, only use first level
+                        second_level = str(col[1]).strip().lower()
+                        if 'legal regulation' in second_level or 'audit status' in second_level or second_level == 'nan':
+                            new_columns.append(str(col[0]).strip())
+                        else:
+                            new_columns.append(' '.join(map(str, col)).strip())
+                    else:
+                        new_columns.append(str(col[0]).strip())
+                df.columns = new_columns
             df.iloc[0, 0] = str(df.iloc[0, 0]).replace('.', '').replace(')', '').replace('(', '-').replace(',', '')
             for col in df.columns[1:]:
                 df[col] = df[col].astype(str).str.replace('.', '', regex=False)
@@ -101,14 +198,56 @@ if html_tables:
             if isinstance(table, pd.DataFrame):
                 df_formatted = table.copy()
                 for col in df_formatted.select_dtypes(include='number').columns:
-                    df_formatted[col] = df_formatted[col].apply(lambda x: f"{int(x):,}" if pd.notnull(x) else "")
+                    df_formatted[col] = df_formatted[col].apply(lambda x: f"{x:,.2f}".rstrip('0').rstrip('.') if pd.notnull(x) else "")
+                # Remove Legal Regulation row if exists
+                if not df_formatted.empty and len(df_formatted) > 0:
+                    legal_reg_mask = df_formatted.iloc[:, 0].astype(str).str.contains('Legal Regulation', case=False, na=False)
+                    df_formatted = df_formatted[~legal_reg_mask]
+                
                 df_formatted.columns = df_formatted.columns.map(str)
-                styles = [{'selector': 'th', 'props': [('text-align', 'center')]}]
-                styles.append({'selector': 'td.col0', 'props': [('text-align', 'left')]} )
-                for i in range(1, len(df_formatted.columns)):
-                    styles.append({'selector': f'td.col{i}', 'props': [('text-align', 'right')]} )
-                styled_table = df_formatted.style.set_table_styles(styles).set_table_attributes('style="font-size:12px;"')
-                st.markdown(styled_table.to_html(), unsafe_allow_html=True)
+                
+                # Clean column names - extract only date part from long strings
+                import re
+                clean_columns = []
+                for col in df_formatted.columns:
+                    col_str = str(col).strip()
+                    if col_str == "Fiscal Year End":
+                        clean_columns.append(col_str)
+                    else:
+                        # Extract date part (format: 31-Dec-YYYY) from the beginning
+                        date_match = re.match(r'(\d{1,2}-[A-Za-z]{3}-\d{4})', col_str)
+                        if date_match:
+                            clean_columns.append(date_match.group(1))
+                        else:
+                            clean_columns.append(col_str)
+                
+                df_formatted.columns = clean_columns
+                
+                # Create HTML table with enhanced styling for Streamlit Cloud compatibility
+                html_table = '<div><table class="custom-table">'
+                
+                # Header row with Dragon Capital styling
+                html_table += '<thead><tr>'
+                for col in df_formatted.columns:
+                    html_table += f'<th>{col}</th>'
+                html_table += '</tr></thead><tbody>'
+                
+                # Data rows with special styling for Audit Status
+                for idx, row in df_formatted.iterrows():
+                    first_cell = str(row.iloc[0]) if pd.notnull(row.iloc[0]) else ""
+                    is_audit_status = 'audit status' in first_cell.lower()
+                    
+                    row_class = 'audit-status-row' if is_audit_status else ''
+                    html_table += f'<tr class="{row_class}">'
+                    
+                    for i, cell in enumerate(row):
+                        cell_value = str(cell) if pd.notnull(cell) else ""
+                        col_class = 'first-col' if i == 0 else 'number-col'
+                        html_table += f'<td class="{col_class}">{cell_value}</td>'
+                    html_table += '</tr>'
+                
+                html_table += '</tbody></table></div>'
+                st.markdown(html_table, unsafe_allow_html=True)
             else:
                 st.error(table)
 else:
