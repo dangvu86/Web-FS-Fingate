@@ -6,6 +6,9 @@ import zipfile
 import gdown
 import tempfile
 import os
+import plotly.graph_objects as go
+import plotly.express as px
+from plotly.subplots import make_subplots
 
 # Cấu hình giao diện
 st.set_page_config(layout="wide")
@@ -97,7 +100,7 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
-st.title("FS Fingate")
+st.title("FS Fingate - Side-by-Side Charts")
 
 # Hàm tải file ZIP từ Google Drive
 
@@ -299,6 +302,305 @@ def calculate_profit_growth_display(current, previous):
         arrow = "↗" if growth >= 0 else "↘"
         return f'<span style="color: {color};">{arrow} {growth:.1f}%</span>'
 
+def create_financial_charts(df, chart_name):
+    """Create interactive financial charts using Plotly"""
+    if df.empty or len(df) < 2:
+        return None
+    
+    # Find numeric columns (exclude first column)
+    numeric_cols = []
+    for col in df.columns[1:]:
+        if df[col].dtype in ['int64', 'float64'] or pd.api.types.is_numeric_dtype(df[col]):
+            numeric_cols.append(col)
+    
+    if len(numeric_cols) < 2:
+        return None
+    
+    # Find revenue and profit rows
+    revenue_row = None
+    gross_profit_row = None
+    net_profit_row = None
+    
+    for idx, row in df.iterrows():
+        first_cell = str(row.iloc[0]).lower()
+        
+        if revenue_row is None and ('net revenue' in first_cell or ('revenue' in first_cell and 'net' in first_cell)):
+            revenue_row = idx
+        elif gross_profit_row is None and 'gross profit' in first_cell:
+            gross_profit_row = idx
+        elif net_profit_row is None and 'net profit' in first_cell and 'after tax' in first_cell:
+            net_profit_row = idx
+    
+    # Extract data for charts
+    charts = []
+    
+    if revenue_row is not None and net_profit_row is not None:
+        # Revenue and Net Profit Chart with Growth Rates
+        years = [col.replace('31-Dec-', '').replace('31-Mar-', '') for col in numeric_cols]
+        revenue_values = [df.iloc[revenue_row][col] if pd.notnull(df.iloc[revenue_row][col]) else 0 for col in numeric_cols]
+        profit_values = [df.iloc[net_profit_row][col] if pd.notnull(df.iloc[net_profit_row][col]) else 0 for col in numeric_cols]
+        
+        # Calculate growth rates
+        revenue_growth = [None]  # First year has no growth
+        profit_growth = [None]
+        
+        for i in range(1, len(revenue_values)):
+            if revenue_values[i-1] != 0:
+                rev_growth = ((revenue_values[i] - revenue_values[i-1]) / abs(revenue_values[i-1])) * 100
+                revenue_growth.append(rev_growth)
+            else:
+                revenue_growth.append(None)
+            
+            if profit_values[i-1] != 0:
+                prof_growth = ((profit_values[i] - profit_values[i-1]) / abs(profit_values[i-1])) * 100
+                profit_growth.append(prof_growth)
+            else:
+                profit_growth.append(None)
+        
+        # Create subplot with secondary y-axis
+        fig = make_subplots(specs=[[{"secondary_y": True}]])
+        
+        # Revenue bars with gradient effect
+        fig.add_trace(
+            go.Bar(
+                x=years,
+                y=revenue_values,
+                name="📈 Net Revenue",
+                marker=dict(
+                    color=revenue_values,
+                    colorscale=[[0, '#E8F5E8'], [1, '#08C179']],
+                    showscale=False,
+                    line=dict(color='#06A85C', width=1)
+                ),
+                text=[f"{v:,.0f}" if v != 0 else "" for v in revenue_values],
+                textposition="outside",
+                textfont=dict(size=10, color='#0C4130')
+            )
+        )
+        
+        # Profit bars with gradient effect
+        fig.add_trace(
+            go.Bar(
+                x=years,
+                y=profit_values,
+                name="💰 Net Profit",
+                marker=dict(
+                    color=profit_values,
+                    colorscale=[[0, '#E6F2F2'], [1, '#0C4130']],
+                    showscale=False,
+                    line=dict(color='#0A3A2A', width=1)
+                ),
+                text=[f"{v:,.0f}" if v != 0 else "" for v in profit_values],
+                textposition="outside",
+                textfont=dict(size=10, color='#0C4130')
+            )
+        )
+        
+        # Revenue growth line (secondary y-axis)
+        fig.add_trace(
+            go.Scatter(
+                x=years,
+                y=revenue_growth,
+                name="📊 Revenue Growth (%)",
+                line=dict(color="#B78D51", width=3, shape='spline'),
+                marker=dict(size=8, color="#B78D51", line=dict(color='white', width=2)),
+                mode="lines+markers",
+                connectgaps=False
+            ),
+            secondary_y=True
+        )
+        
+        # Profit growth line (secondary y-axis)
+        fig.add_trace(
+            go.Scatter(
+                x=years,
+                y=profit_growth,
+                name="📈 Profit Growth (%)",
+                line=dict(color="#FF6B35", width=3, dash="dot", shape='spline'),
+                marker=dict(size=8, color="#FF6B35", line=dict(color='white', width=2)),
+                mode="lines+markers",
+                connectgaps=False
+            ),
+            secondary_y=True
+        )
+        
+        # Update layout with improved styling
+        fig.update_layout(
+            title={
+                'text': f"💼 Financial Performance Overview",
+                'x': 0.5,
+                'font': {'size': 18, 'color': '#0C4130', 'family': 'Arial Black'}
+            },
+            plot_bgcolor='rgba(248, 249, 250, 0.8)',
+            paper_bgcolor='rgba(255,255,255,0.95)',
+            barmode='group',
+            height=450,
+            margin=dict(t=70, b=50, l=50, r=50),
+            legend=dict(
+                orientation="h",
+                yanchor="bottom",
+                y=-0.15,
+                xanchor="center",
+                x=0.5,
+                font=dict(size=12),
+                bgcolor='rgba(255,255,255,0.8)',
+                bordercolor='#E9ECEF',
+                borderwidth=1
+            )
+        )
+        
+        # Update x-axis with improved styling
+        fig.update_xaxes(
+            title_text="📅 Year",
+            title_font=dict(size=14, color='#0C4130'),
+            gridcolor='rgba(12, 65, 48, 0.1)',
+            gridwidth=1
+        )
+        
+        # Update primary y-axis
+        fig.update_yaxes(
+            title_text="💵 Amount (VND)",
+            title_font=dict(size=14, color='#0C4130'),
+            gridcolor='rgba(12, 65, 48, 0.1)',
+            gridwidth=1,
+            secondary_y=False
+        )
+        
+        # Update secondary y-axis
+        fig.update_yaxes(
+            title_text="📊 Growth Rate (%)",
+            title_font=dict(size=14, color='#B78D51'),
+            gridcolor='rgba(183, 141, 81, 0.1)',
+            gridwidth=1,
+            secondary_y=True
+        )
+        
+        charts.append(("Revenue & Profit Analysis", fig))
+    
+    # Margin Analysis Chart
+    if revenue_row is not None and gross_profit_row is not None and net_profit_row is not None:
+        years = [col.replace('31-Dec-', '').replace('31-Mar-', '') for col in numeric_cols]
+        gross_margins = []
+        net_margins = []
+        
+        for col in numeric_cols:
+            revenue = df.iloc[revenue_row][col]
+            gross_profit = df.iloc[gross_profit_row][col]
+            net_profit = df.iloc[net_profit_row][col]
+            
+            if pd.notnull(revenue) and revenue != 0:
+                gross_margin = (gross_profit / revenue * 100) if pd.notnull(gross_profit) else 0
+                net_margin = (net_profit / revenue * 100) if pd.notnull(net_profit) else 0
+            else:
+                gross_margin = 0
+                net_margin = 0
+            
+            gross_margins.append(gross_margin)
+            net_margins.append(net_margin)
+        
+        fig_margin = go.Figure()
+        
+        # Add area fill for gross margin
+        fig_margin.add_trace(go.Scatter(
+            x=years + years[::-1],
+            y=[0] * len(years) + gross_margins[::-1],
+            fill='toself',
+            fillcolor='rgba(8, 193, 121, 0.1)',
+            line=dict(color='rgba(255,255,255,0)'),
+            showlegend=False,
+            name='Gross Margin Area'
+        ))
+        
+        # Add area fill for net margin
+        fig_margin.add_trace(go.Scatter(
+            x=years + years[::-1],
+            y=[0] * len(years) + net_margins[::-1],
+            fill='toself',
+            fillcolor='rgba(12, 65, 48, 0.15)',
+            line=dict(color='rgba(255,255,255,0)'),
+            showlegend=False,
+            name='Net Margin Area'
+        ))
+        
+        # Gross margin line
+        fig_margin.add_trace(go.Scatter(
+            x=years,
+            y=gross_margins,
+            name="📊 Gross Margin (%)",
+            line=dict(color="#08C179", width=4, shape='spline'),
+            marker=dict(size=12, color="#08C179", line=dict(color='white', width=3)),
+            mode="lines+markers+text",
+            text=[f"{m:.1f}%" for m in gross_margins],
+            textposition="top center",
+            textfont=dict(size=10, color='#0C4130')
+        ))
+        
+        # Net margin line
+        fig_margin.add_trace(go.Scatter(
+            x=years,
+            y=net_margins,
+            name="💎 Net Margin (%)",
+            line=dict(color="#0C4130", width=4, shape='spline'),
+            marker=dict(size=12, color="#0C4130", line=dict(color='white', width=3)),
+            mode="lines+markers+text",
+            text=[f"{m:.1f}%" for m in net_margins],
+            textposition="bottom center",
+            textfont=dict(size=10, color='#0C4130')
+        ))
+        
+        # Add zero reference line
+        fig_margin.add_hline(
+            y=0, 
+            line_dash="dot", 
+            line_color="rgba(128, 128, 128, 0.5)",
+            annotation_text="Break-even",
+            annotation_position="top right"
+        )
+        
+        fig_margin.update_layout(
+            title={
+                'text': f"📈 Profitability Margin Trends",
+                'x': 0.5,
+                'font': {'size': 18, 'color': '#0C4130', 'family': 'Arial Black'}
+            },
+            plot_bgcolor='rgba(248, 249, 250, 0.8)',
+            paper_bgcolor='rgba(255,255,255,0.95)',
+            height=450,
+            margin=dict(t=70, b=50, l=50, r=50),
+            xaxis=dict(
+                title="📅 Year",
+                title_font=dict(size=14, color='#0C4130'),
+                gridcolor='rgba(12, 65, 48, 0.1)',
+                gridwidth=1,
+                showline=True,
+                linecolor='rgba(12, 65, 48, 0.3)'
+            ),
+            yaxis=dict(
+                title="📊 Margin Percentage (%)",
+                title_font=dict(size=14, color='#0C4130'),
+                gridcolor='rgba(12, 65, 48, 0.1)',
+                gridwidth=1,
+                showline=True,
+                linecolor='rgba(12, 65, 48, 0.3)'
+            ),
+            legend=dict(
+                orientation="h",
+                yanchor="bottom",
+                y=-0.15,
+                xanchor="center",
+                x=0.5,
+                font=dict(size=12),
+                bgcolor='rgba(255,255,255,0.8)',
+                bordercolor='#E9ECEF',
+                borderwidth=1
+            ),
+            hovermode='x unified'
+        )
+        
+        charts.append(("Profitability Analysis", fig_margin))
+    
+    return charts
+
 # ID của file ZIP trên Google Drive
 drive_file_id = "1A0yeEBAvLkX64PlatHboPAHhHVIcJICw"
 
@@ -377,10 +679,11 @@ if html_tables:
                 
                 df_formatted.columns = clean_columns
                 
-                # Create a copy for growth analysis before formatting numbers as strings
-                df_for_growth = df_formatted.copy()
+                # Create a copy for growth analysis and charts before formatting numbers as strings
+                df_for_analysis = df_formatted.copy()
                 
                 # Create HTML table with enhanced styling for Streamlit Cloud compatibility
+                st.subheader("📋 Financial Data Table")
                 html_table = '<div><table class="custom-table">'
                 
                 # Header row with Dragon Capital styling
@@ -413,11 +716,32 @@ if html_tables:
                     html_table += '</tr>'
                 
                 # Add growth analysis rows using the numeric dataframe
-                growth_rows_html = create_growth_analysis_rows(df_for_growth)
+                growth_rows_html = create_growth_analysis_rows(df_for_analysis)
                 html_table += growth_rows_html
                 
                 html_table += '</tbody></table></div>'
                 st.markdown(html_table, unsafe_allow_html=True)
+                
+                # Create and display financial charts below the table
+                charts = create_financial_charts(df_for_analysis, name.replace('.html', ''))
+                if charts:
+                    st.markdown("---")  # Visual separator
+                    st.subheader("📊 Financial Analysis Charts")
+                    
+                    # Display charts horizontally side by side
+                    if len(charts) == 2:
+                        col1, col2 = st.columns(2)
+                        with col1:
+                            st.markdown(f"#### {charts[0][0]}")
+                            st.plotly_chart(charts[0][1], use_container_width=True, key=f"chart1_{name}")
+                        with col2:
+                            st.markdown(f"#### {charts[1][0]}")
+                            st.plotly_chart(charts[1][1], use_container_width=True, key=f"chart2_{name}")
+                    else:
+                        # If only one chart, display it full width
+                        for chart_name, chart_fig in charts:
+                            st.markdown(f"#### {chart_name}")
+                            st.plotly_chart(chart_fig, use_container_width=True, key=f"{chart_name.lower().replace(' ', '_')}_{name}")
             else:
                 st.error(table)
 else:
